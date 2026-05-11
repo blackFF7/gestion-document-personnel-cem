@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}DigitDoc{% endblock %}</title>
+        <link rel="icon" href="{{ asset('icons/logo3.png') }}" />
+        {% block stylesheets %}
+        {% endblock %}
+
+        {% block javascripts %}
+            {% block importmap %}{{ importmap('app') }}{% endblock %}
+        {% endblock %}
+
+        {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
+        {% if frankenphpHotReload %}
+        <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
+        {% endif %}
+    </head>
+    <body>
+    {# Flash messages / Notifications #}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        {% for type, messages in app.flashes %}
+            {% for message in messages %}
+                <div 
+                    data-controller="toast"
+                    data-toast-duration-value="4000"
+                    class="toast show align-items-center text-bg-{{
+                        type == 'success' ? 'success' :
+                        (type == 'error' ? 'danger' :
+                        (type == 'warning' ? 'warning' : 'info'))
+                    }} border-0 mb-2 shadow"
+                    role="alert"
+                >
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            {{ message }}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+
+                    {# Barre de progression #}
+                    <div class="toast-progress bg-white"></div>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+        {% include "./components/nav.html.twig" %}
+        {% block body %}{% endblock %}
+        {% include "./components/footer.html.twig" %}
+    </body>
+</html>

@@ -1,0 +1,177 @@
+{% if app.request.attributes.get('_route') != 'app_login' %}
+
+<header class="main-header fixed-top">
+
+  {# ===== TOP BAR ===== #}
+  <div class="top-bar">
+    <div class="brand">
+      <div class="brand-logo">
+          <img src="{{ asset('icons/logo3.png') }}"
+                    class="img-fluid login-logo"
+                    alt="DigitDoc"
+                    data-logo-target="image">
+      </div>
+      <div class="brand-name">DIGIT<span>DOC</span></div>
+    </div>
+
+    {% if app.user %}
+    <div class="top-actions">
+      <div class="d-flex align-items-center gap-2 top-btn">
+        <span class="dot"></span>
+        {{ app.user.fullName }}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ===== MENU BAR ===== #}
+  <nav class="menu-bar">
+    {% set route = app.request.attributes.get('_route') %}
+
+    <ul class="nav-links">
+      <li>
+        <a href="{{ path('app_dashboard') }}"
+           class="{{ route == 'app_dashboard' ? 'active' : '' }}">
+          {{ ux_icon('mdi:home') }} ACCUEIL
+        </a>
+      </li>
+      <li>
+        <a href="{{ path('document_index') }}"
+           class="{{ route == 'document_index' ? 'active' : '' }}">
+          {{ ux_icon('mdi:file-multiple') }} MES DOCUMENTS
+        </a>
+      </li>
+      <li>
+        <a href="{{ path('app_espace_index') }}"
+           class="{{ route == 'app_espace_index' ? 'active' : '' }}">
+          {{ ux_icon('mingcute:classify-add-fill') }} ESPACE DOCUMENTS
+        </a>
+      </li>
+
+      {% if is_granted('ROLE_CHEF') %}
+        <li>
+        <a href="{{ path('app_agent_index') }}"
+           class="{{ route starts with 'app_agent' ? 'active' : '' }}">
+          {{ ux_icon('mdi:account-group') }} AGENTS
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+
+    {# USER DROPDOWN #}
+    {% if app.user %}
+    <div class="dropdown d-none d-lg-block">
+        <button class="user-btn dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                data-bs-auto-close="true"
+                aria-expanded="false">
+            <div class="avatar">
+                {{ app.user.prenomAg|first|upper }}{{ app.user.nomAg|first|upper }}
+            </div>
+            <span class="user-name">{{ app.user.fullName }}</span>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end glass-dropdown mt-2">
+            <li>
+                <div class="px-3 py-2 border-bottom mb-1">
+                    <div class="dh-name">{{ app.user.fullName }}</div>
+                    <div class="dh-role">
+                        {{ app.user.fonctionID.nomFon }} · IM {{ app.user.IMFormatted }}
+                    </div>
+                </div>
+            </li>
+            <li>
+                <a class="dropdown-item" href="{{ path('app_agent_show', {'id': app.user.id}) }}">
+                    {{ ux_icon('mdi:account-circle') }} Mon profil
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item text-danger" href="{{ path('app_logout') }}">
+                    {{ ux_icon('mdi:logout') }} Déconnexion
+                </a>
+            </li>
+        </ul>
+    </div>
+    {% endif %}
+
+    {# HAMBURGER #}
+<!-- centré sur xs-md, invisible sur lg+ -->
+  <div class="d-flex w-100 d-lg-none justify-content-end">
+    <button class="hamburger mt-2 mb-2 bg-transparent border-0"
+            type="button"
+            aria-controls="mobileMenu"
+            aria-expanded="false"
+            aria-label="Ouvrir le menu mobile"
+            data-controller="hamburger"
+            data-action="click->hamburger#toggle"
+            data-bs-toggle="collapse"
+            data-bs-target="#mobileMenu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  </nav>
+
+  {# ===== MOBILE MENU ===== #}
+  <div class="mobile-menu collapse d-lg-none" id="mobileMenu">
+    <ul class="mobile-nav">
+      <li>
+        <a href="{{ path('app_dashboard') }}"
+           class="{{ route == 'app_dashboard' ? 'active' : '' }}">
+          {{ ux_icon('mdi:home') }} ACCUEIL
+        </a>
+      </li>
+      <li>
+        <a href="{{ path('document_index') }}"
+           class="{{ route == 'document_index' ? 'active' : '' }}">
+          {{ ux_icon('mdi:file-multiple') }} MES DOCUMENTS
+        </a>
+      </li>
+      <li>
+        <a href="{{ path('app_espace_index') }}"
+           class="{{ route == 'app_espace_index' ? 'active' : '' }}">
+            {{ ux_icon('mingcute:classify-add-fill') }} ESPACE DOCUMENTS
+        </a>
+      </li>
+
+
+
+
+      {% if is_granted('ROLE_CHEF') %}
+        <li>
+        <a href="{{ path('app_agent_index') }}"
+           class="{{ route starts with 'app_agent' ? 'active' : '' }}">
+          {{ ux_icon('mdi:account-group') }} AGENTS
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+
+    {% if app.user %}
+    <div class="mobile-user">
+      <div class="mobile-user-info">
+        <div class="avatar">
+          {{ app.user.prenomAg|first|upper }}{{ app.user.nomAg|first|upper }}
+        </div>
+        <div>
+          <div class="mu-name">{{ app.user.fullName }}</div>
+          <div class="mu-role">{{ app.user.fonctionID.nomFon }} · IM {{ app.user.IMFormatted }}</div>
+        </div>
+      </div>
+      <div class="mobile-actions">
+        <a class="mobile-action-btn" href="{{ path('app_agent_show', {'id': app.user.id}) }}">
+          {{ ux_icon('mdi:account') }} Profil
+        </a>
+        <a class="mobile-action-btn danger" href="{{ path('app_logout') }}">
+          {{ ux_icon('mdi:logout') }} Déconnexion
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</header>
+
+{% endif %}

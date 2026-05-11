@@ -1,0 +1,123 @@
+<div {{ attributes }} class="document-form-wrap">
+
+    <form
+        enctype="multipart/form-data"
+        data-action="live#action:prevent"
+        data-live-action-param="save"
+        novalidate
+    >
+
+        {# ═════ SECTION RÉFÉRENCE ═════ #}
+        <div class="form-section reference-section">
+            <h5 class="section-title">🏷️ Référence</h5>
+
+            <div class="ref-badge">
+                <span>Référence générée :</span>
+                <code>{{ this.autoReference }}</code>
+            </div>
+
+            <div class="form-check form-switch mt-2">
+                <input class="form-check-input"
+                       type="checkbox"
+                       data-model="referenceOverride">
+
+                <label class="form-check-label">
+                    Personnaliser
+                </label>
+            </div>
+
+            {% if referenceOverride %}
+                <input type="text"
+                       class="form-control mt-2"
+                       data-model="referenceManuelle"
+                       placeholder="DOC-2026-001">
+            {% endif %}
+        </div>
+
+        {# ═════ SECTION INFOS ═════ #}
+        <div class="form-section">
+            <h5 class="section-title">📄 Informations</h5>
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label>Personnel</label>
+                    <select class="form-select" data-model="personnelId">
+                        <option value="">-- Choisir --</option>
+
+                        {% for p in this.personnels %}
+                            <option value="{{ p.id }}"
+                                {% if personnelId == p.id %}selected{% endif %}>
+                                {{ p.IMFormatted }} — {{ p.fullName }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label>Type document</label>
+                    <select class="form-select" data-model="typeDocumentId">
+                        <option value="">-- Choisir --</option>
+
+                        {% for td in this.typeDocuments %}
+                            <option value="{{ td.id }}"
+                                {% if typeDocumentId == td.id %}selected{% endif %}>
+                                {{ td.dossierID.nomDos }} › {{ td.nomTypeDoc }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label>Titre</label>
+                    <input type="text" class="form-control" data-model="titre">
+                </div>
+
+                <div class="col-md-6">
+                    <label>Titulaire</label>
+                    <input type="text" class="form-control" data-model="titulaire">
+                </div>
+
+                <div class="col-md-4">
+                    <label>Date arrivée</label>
+                    <input type="date" class="form-control" data-model="dateArriveDoc">
+                </div>
+
+                <div class="col-md-4">
+                    <label>Statut</label>
+                    <select class="form-select" data-model="statucDoc">
+                        {% for s in this.statusChoices %}
+                            <option value="{{ s.value }}"
+                                {% if statucDoc == s.value %}selected{% endif %}>
+                                {{ s.value }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label>Fichier</label>
+                    <input type="file" class="form-control">
+                </div>
+
+                <div class="col-12">
+                    <label>Description</label>
+                    <textarea class="form-control" data-model="description"></textarea>
+                </div>
+
+            </div>
+        </div>
+
+        {# ═════ ACTIONS ═════ #}
+        <div class="form-actions mt-3">
+            <a href="{{ path('document_index') }}" class="btn btn-secondary">
+                Annuler
+            </a>
+
+            <button class="btn btn-primary">
+                {{ editId ? '💾 Sauvegarder' : '✅ Créer' }}
+            </button>
+        </div>
+
+    </form>
+</div>

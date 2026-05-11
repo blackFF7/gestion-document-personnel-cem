@@ -1,0 +1,225 @@
+{# templates/document/edit.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier : {{ document.reference }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid px-4 py-3 mt-5 pt-5">
+
+    <nav aria-label="breadcrumb" class="mb-3 mt-4 pt-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_espace_index') }}">Documents</a></li>
+            <li class="breadcrumb-item">
+                <a href="{{ path('app_espace_show', {'id': document.id}) }}">{{ document.reference }}</a>
+            </li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+
+    <h1 class="h3 fw-bold mb-4">Modifier le document</h1>
+
+    <div class="row g-4">
+
+        {# ── Formulaire ─────────────────────────────────────────────────────── #}
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">📋 Modifier les informations</div>
+                <div class="card-body">
+                    {{ form_start(form, {'attr': {'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
+
+                    <div class="mb-3">
+                        {{ form_label(form.personnelID) }}
+                        {{ form_widget(form.personnelID) }}
+                        {{ form_errors(form.personnelID) }}
+                    </div>
+
+                    <div class="mb-3 d-flex align-items-end gap-2">
+                        <div class="flex-grow-1">
+                            {{ form_label(form.typeDocumentID) }}
+                            {{ form_widget(form.typeDocumentID) }}
+                            {{ form_errors(form.typeDocumentID) }}
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-0"
+                                data-bs-toggle="modal" data-bs-target="#addTypeDocModal"
+                                title="Ajouter un type de document">
+                            <i class="bi bi-plus-circle"></i>
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.titre) }}
+                        {{ form_widget(form.titre) }}
+                        {{ form_errors(form.titre) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.titulaire) }}
+                        {{ form_widget(form.titulaire) }}
+                        {{ form_errors(form.titulaire) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.dateArriveDoc) }}
+                        {{ form_widget(form.dateArriveDoc) }}
+                        {{ form_errors(form.dateArriveDoc) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.description) }}
+                        {{ form_widget(form.description) }}
+                        {{ form_errors(form.description) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.fichierUpload) }}
+                        {{ form_widget(form.fichierUpload, {'id': 'fileInput'}) }}
+                        {{ form_errors(form.fichierUpload) }}
+                        {% if document.fichier %}
+                            <div class="form-text text-success">
+                                <i class="bi bi-file-check me-1"></i>
+                                Fichier actuel : <strong>{{ document.fichier }}</strong>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.statucDoc is defined %}
+                    <div class="mb-3">
+                        {{ form_label(form.statucDoc) }}
+                        {{ form_widget(form.statucDoc) }}
+                        {{ form_errors(form.statucDoc) }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Référence (générée automatiquement)</label>
+                        <input type="text" class="form-control bg-light text-muted"
+                               value="{{ document.reference }}" readonly>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-save me-1"></i>Enregistrer les modifications
+                        </button>
+                        <a href="{{ path('app_espace_show', {'id': document.id}) }}"
+                           class="btn btn-outline-secondary">
+                            Annuler
+                        </a>
+                    </div>
+
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+
+        {# ── Prévisualisation ────────────────────────────────────────────────── #}
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-bold">👁️ Document actuel</div>
+                <div class="card-body p-0 d-flex align-items-center justify-content-center"
+                     style="min-height: 500px;">
+                    {% if previewUrl %}
+                        {% set ext = document.fichier|split('.')|last|lower %}
+                        {% if ext == 'pdf' %}
+                            <iframe src="{{ previewUrl }}" width="100%" height="600"
+                                    style="border:none;" id="currentPreview"></iframe>
+                        {% elseif ext in ['jpg','jpeg','png','gif','webp'] %}
+                            <div class="p-3 text-center">
+                                <img src="{{ previewUrl }}" alt="Aperçu"
+                                     class="img-fluid rounded"
+                                     style="max-height:580px; object-fit:contain;">
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted p-4">
+                                <i class="bi bi-file-earmark-text fs-1 mb-2 d-block"></i>
+                                <p>{{ ext|upper }} – Prévisualisation non disponible</p>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="bi bi-cloud-slash fs-1 mb-2 d-block"></i>
+                            <p>Fichier non disponible.</p>
+                        </div>
+                    {% endif %}
+
+                    {# Prévisualisation du nouveau fichier sélectionné #}
+                    <div id="newPreviewContainer" style="display:none; width:100%; padding:1rem;">
+                        <div class="alert alert-info py-1 mb-2">
+                            <small><i class="bi bi-info-circle me-1"></i>Nouveau fichier sélectionné :</small>
+                        </div>
+                        <iframe id="newPreviewIframe" src="" width="100%" height="500"
+                                style="display:none; border:none;"></iframe>
+                        <img id="newPreviewImage" src="" alt=""
+                             class="img-fluid rounded"
+                             style="display:none; max-height:480px; object-fit:contain;">
+                        <div id="newPreviewUnsupported" style="display:none;"
+                             class="text-center text-muted">
+                            <i class="bi bi-file-check fs-1 d-block mb-2 text-success"></i>
+                            <small id="newPreviewFilename"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{# ── Modal ajout type document ──────────────────────────────────────────────── #}
+<div class="modal fade" id="addTypeDocModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">➕ Ajouter un type de document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <twig:NewTypeDocumentForm />
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('fileInput');
+    if (!fileInput) return;
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const url = URL.createObjectURL(file);
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        // Cacher le preview actuel
+        const currentPreview = document.getElementById('currentPreview');
+        if (currentPreview) currentPreview.style.display = 'none';
+
+        const container = document.getElementById('newPreviewContainer');
+        const iframe = document.getElementById('newPreviewIframe');
+        const img = document.getElementById('newPreviewImage');
+        const unsupported = document.getElementById('newPreviewUnsupported');
+        const filename = document.getElementById('newPreviewFilename');
+
+        container.style.display = 'block';
+        iframe.style.display = 'none';
+        img.style.display = 'none';
+        unsupported.style.display = 'none';
+
+        if (ext === 'pdf') {
+            iframe.src = url;
+            iframe.style.display = 'block';
+        } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+            img.src = url;
+            img.style.display = 'block';
+        } else {
+            filename.textContent = file.name;
+            unsupported.style.display = 'block';
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

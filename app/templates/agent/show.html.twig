@@ -1,0 +1,258 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ personnel.nomAg }} {{ personnel.prenomAg }}{% endblock %}
+
+{% block body %}
+
+{% include "./components/flash.html.twig" %}
+<div class="container-fluid py-4 mt-5 pt-5">
+
+    <div class="mt-4 pt-4">
+
+
+        <div class="row g-4">
+            {# ── Carte profil ── #}
+            <div class="col-lg-4">
+                <div class="card shadow-sm text-center">
+                    <div class="card-body py-4">
+                        {% if personnel.photoProfil %}
+                            <img src="{{ photoUrl }}"
+                                class="rounded-circle mb-3 border border-3 border-primary"
+                                width="120" height="120"
+                                style="object-fit:cover">
+                        {% else %}
+                            <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center text-white fw-bold mx-auto mb-3"
+                                style="width:120px;height:120px;font-size:36px">
+                                {{ personnel.nomAg|first }}{{ personnel.prenomAg|first }}
+                            </div>
+                        {% endif %}
+
+                        <h4 class="fw-bold mb-0">{{ personnel.nomAg }} {{ personnel.prenomAg }}</h4>
+                        <p class="text-muted mb-1">{{ personnel.fonctionID?.nomFon ?? '–' }}</p>
+                        <p class="text-muted small mb-2">@{{ personnel.username }}</p>
+
+                        {% set statusClass = {
+                            'Actif': 'success', 'Inactif': 'secondary',
+                            'Suspendu': 'warning', 'Désactivé': 'danger'
+                        } %}
+                        <span class="badge bg-{{ statusClass[personnel.statusCompte.value] ?? 'secondary' }} fs-6 mb-3">
+                            {{ personnel.statusCompte.value }}
+                        </span>
+
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                            {% if is_granted('PERSONNEL_EDIT', personnel) %}
+                            <a href="{{ path('app_agent_edit', {id: personnel.id}) }}" class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil me-1"></i>Modifier
+                            </a>
+                            {% endif %}
+                            {% if is_granted('ROLE_ADMIN') %}
+                            <a href="#" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-clock-history me-1"></i>Audit
+                            </a>
+                            {# Changer statut #}
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                    Statut
+                                </button>
+                                <ul class="dropdown-menu">
+                                    {% for s in ['Actif','Inactif','Suspendu','Désactivé'] %}
+                                    <li>
+                                        <form action="{{ path('app_agent_status', {id: personnel.id}) }}" method="post">
+                                            <input type="hidden" name="status" value="{{ s }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('status-' ~ personnel.id) }}">
+                                            <button class="dropdown-item {{ personnel.statusCompte.value == s ? 'active' : '' }}">
+                                                {{ s }}
+                                            </button>
+                                        </form>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {# Affectation #}
+                <div class="card shadow-sm mt-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-building me-1"></i>Affectation</div>
+                    <div class="card-body">
+                        {% if personnel.BackFront %}
+                            <p class="text-muted small mb-1">Agence(s)</p>
+                            {% for ap in personnel.agencePersonnels %}
+                                <span class="badge bg-info text-dark me-1">{{ ap.agenceID?.nomAgc }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted small mb-1">Service(s)</p>
+                            {% for dp in personnel.directionPersonnels %}
+                                <span class="badge bg-warning text-dark me-1">{{ dp.serviceID?.nomSer }}</span>
+                                <span class="text-muted small">{{ dp.serviceID?.directionID?.nomDir }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# ── Informations ── #}
+            <div class="col-lg-8">
+                {# Infos personnelles #}
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-person me-1"></i>Informations personnelles</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="text-muted small">Matricule (IM)</label>
+                                <p class="fw-bold mb-0">{{ personnel.IMFormatted }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="text-muted small">Sexe</label>
+                                <p class="mb-0">{{ personnel.sexe?.value }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="text-muted small">Date de naissance</label>
+                                <p class="mb-0">{{ personnel.dateNaissAg|date('d/m/Y') }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="text-muted small">Date d'entrée</label>
+                                <p class="mb-0">{{ personnel.dateEntre|date('d/m/Y') }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="text-muted small">Adresse</label>
+                                <p class="mb-0">{{ personnel.adresseAg ?? '—' }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="text-muted small">Email</label>
+                                <p class="mb-0">{{ personnel.mailAg ?? '—' }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="text-muted small">Téléphone(s)</label>
+                                <p class="mb-0">
+                                    {% for tel in personnel.contactAg ?? [] %}
+                                        <span class="badge bg-light text-dark border me-1">{{ tel }}</span>
+                                    {% else %}—{% endfor %}
+                                </p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="text-muted small">Situation familiale</label>
+                                <p class="mb-0">{{ personnel.situationFamilial?.value }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Situation familiale détail #}
+                {% if personnel.situationFamilial.value in ['Marié','Veuve'] %}
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-heart me-1"></i>Conjoint</div>
+                    <div class="card-body">
+                        {% if personnel.conjoint %}
+                        <div class="row g-2">
+                            <div class="col-sm-4"><label class="text-muted small">Nom</label><p class="mb-0">{{ personnel.conjoint.nom }}</p></div>
+                            <div class="col-sm-4"><label class="text-muted small">Prénom</label><p class="mb-0">{{ personnel.conjoint.prenom }}</p></div>
+                            <div class="col-sm-4"><label class="text-muted small">Profession</label><p class="mb-0">{{ personnel.conjoint.profession ?? '—' }}</p></div>
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">Aucun conjoint enregistré.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Enfants #}
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold">
+                        <i class="bi bi-people me-1"></i>Enfants
+                        <span class="badge bg-secondary ms-1">{{ personnel.enfants|length }}</span>
+                    </div>
+                    <div class="card-body">
+                        {% if personnel.enfants|length %}
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead><tr><th>Nom</th><th>Prénom</th><th>Naissance</th><th>Sexe</th></tr></thead>
+                                <tbody>
+                                {% for enfant in personnel.enfants %}
+                                    <tr>
+                                        <td>{{ enfant.nom }}</td>
+                                        <td>{{ enfant.prenom }}</td>
+                                        <td>{{ enfant.dateNaiss ? enfant.dateNaiss|date('d/m/Y') : '—' }}</td>
+                                        <td>{{ enfant.sexe?.value }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">Aucun enfant enregistré.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {# Compte #}
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-semibold"><i class="bi bi-shield me-1"></i>Compte</div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-sm-4">
+                                <label class="text-muted small">Créé le</label>
+                                <p class="mb-0">{{ personnel.creationCompte|date('d/m/Y H:i') }}</p>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="text-muted small">Mis à jour</label>
+                                <p class="mb-0">{{ personnel.majCompte|date('d/m/Y H:i') }}</p>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="text-muted small">Dernière connexion</label>
+                                <p class="mb-0">{{ personnel.dernierConnexion ? personnel.dernierConnexion|date('d/m/Y H:i') : '—' }}</p>
+                            </div>
+                            {% if is_granted('ROLE_ADMIN') %}
+                            <div class="col-12">
+                                <label class="text-muted small">Rôles</label>
+                                <p class="mb-0">
+                                    {% for role in personnel.roles %}
+                                        <span class="badge bg-primary me-1">{{ role }}</span>
+                                    {% endfor %}
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {# Documents récents (USER voit seulement les siens) #}
+                {% if is_granted('ROLE_SAP') or is_granted('ROLE_ADMIN') or (is_granted('ROLE_RH')) or (app.user.id == personnel.id) %}
+                <div class="card shadow-sm">
+                    <div class="card-header fw-semibold"><i class="bi bi-file-earmark me-1"></i>Documents récents</div>
+                    <div class="card-body">
+                        {% set docs = personnel.documents|slice(0, 5) %}
+                        {% if docs|length %}
+                        <ul class="list-group list-group-flush">
+                            {% for doc in docs %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <span class="fw-semibold">{{ doc.reference }}</span>
+                                    <span class="text-muted small ms-2">{{ doc.typeDocumentID?.nomTypeDoc }}</span>
+                                </div>
+                                <span class="badge bg-{{ {
+                                    'Brouillon': 'secondary', 'Soumis': 'info',
+                                    'Approuvé': 'success', 'Rejeté': 'danger', 'Archivé': 'dark'
+                                }[doc.statucDoc.value] ?? 'secondary' }}">
+                                    {{ doc.statucDoc.value }}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted mb-0">Aucun document.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

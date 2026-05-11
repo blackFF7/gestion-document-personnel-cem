@@ -1,0 +1,300 @@
+{# templates/components/PersonnelForm.html.twig #}
+<div {{ attributes }} class="personnel-form-wrap">
+
+    {% for msg in app.flashes('error') %}
+        <div class="alert alert-danger">{{ msg }}</div>
+    {% endfor %}
+
+    <form enctype="multipart/form-data"
+          data-action="live#action:prevent"
+          data-live-action-param="save"
+          novalidate>
+
+        {# ═══════════════════════════════════════════════════════════════════
+           PHOTO DE PROFIL
+           ⚠️  PAS de data-model sur l'input[type=file].
+           Un fichier n'est pas sérialisable par LiveComponent → re-render
+           immédiat → preview effacé. Le controller Stimulus "photo-preview"
+           gère l'aperçu localement. Le fichier est lu par
+           $request->files->get('photo_profil') dans la LiveAction save().
+        ══════════════════════════════════════════════════════════════════════ #}
+        {% include 'components/_photo_section.html.twig' %}
+
+        {# ═══════════════════════════════════════════════════════════════════
+           RENSEIGNEMENTS PERSONNELS
+
+        {# ═══════════════════════════════════════════════════════════════════
+           IDENTITÉ
+        ══════════════════════════════════════════════════════════════════════ #}
+        <div class="form-section">
+            <h5 class="section-title">Identité</h5>
+            <div class="row g-3">
+
+                <div class="col-md-2">
+                    <label class="form-label required">IM</label>
+                    <input type="number" class="form-control {{ _errors.has('IM') ? 'is-invalid' }}"
+                           placeholder="001" min="1" data-model="IM">
+                    {% if _errors.has('IM') %}<div class="invalid-feedback">{{ _errors.get('IM') }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-5">
+                    <label class="form-label required">Nom</label>
+                    <input type="text" class="form-control {{ _errors.has('nomAg') ? 'is-invalid' }}"
+                           placeholder="Nom de famille" data-model="nomAg">
+                    {% if _errors.has('nomAg') %}<div class="invalid-feedback">{{ _errors.get('nomAg') }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-5">
+                    <label class="form-label required">Prénom</label>
+                    <input type="text" class="form-control {{ _errors.has('prenomAg') ? 'is-invalid' }}"
+                           placeholder="Prénom" data-model="prenomAg">
+                    {% if _errors.has('prenomAg') %}<div class="invalid-feedback">{{ _errors.get('prenomAg') }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Sexe</label>
+                    <select class="form-select" data-model="sexe">
+                        <option value="">-- Choisir --</option>
+                        {% for s in this.sexeChoices %}
+                            <option value="{{ s.value }}" {{ sexe == s.value ? 'selected' }}>{{ s.value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Date de naissance</label>
+                    <input type="date" class="form-control" data-model="dateNaissAg">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Date d'entrée</label>
+                    <input type="date" class="form-control" data-model="dateEntre">
+                </div>
+
+                <div class="col-md-6">
+                    <input type="text" class="form-control" placeholder="Adresse" data-model="adresseAg">
+                </div>
+
+                <div class="col-md-6">
+                    <input type="email" class="form-control" placeholder="Email professionnel" data-model="mailAg">
+                </div>
+
+            </div>
+        </div>
+
+        {# ═══════════════════════════════════════════════════════════════════
+           CONTACTS — array de scalaires → data-model[i][key] fonctionne
+        ══════════════════════════════════════════════════════════════════════ #}
+        <div class="form-section">
+            <h5 class="section-title">Contacts</h5>
+
+            {% for i, contact in contacts %}
+                <div class="d-flex gap-2 mb-2 align-items-center">
+                    <select class="form-select" style="max-width:160px"
+                            data-model="contacts[{{ i }}][type]">
+                        <option value="mobile"   {{ contact.type == 'mobile'   ? 'selected' }}>📱 Mobile</option>
+                        <option value="fixe"     {{ contact.type == 'fixe'     ? 'selected' }}>☎️ Fixe</option>
+                        <option value="whatsapp" {{ contact.type == 'whatsapp' ? 'selected' }}>💬 WhatsApp</option>
+                        <option value="autre"    {{ contact.type == 'autre'    ? 'selected' }}>🔗 Autre</option>
+                    </select>
+                    <input type="text" class="form-control"
+                           placeholder="+261 XX XX XXX XX"
+                           data-model="contacts[{{ i }}][valeur]">
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            data-action="live#action"
+                            data-live-action-param="removeContact"
+                            data-live-index-param="{{ i }}">✕</button>
+                </div>
+            {% endfor %}
+
+            <button type="button" class="btn btn-outline-primary btn-sm mt-1"
+                    data-action="live#action"
+                    data-live-action-param="addContact">
+                + Ajouter un contact
+            </button>
+        </div>
+
+        {# ═══════════════════════════════════════════════════════════════════
+           SITUATION FAMILIALE + CONJOINT + ENFANTS
+        ══════════════════════════════════════════════════════════════════════ #}
+        <div class="form-section">
+            <h5 class="section-title">Situation familiale</h5>
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label">Situation</label>
+                    <select class="form-select" data-model="situationFamilial">
+                        {% for sf in this.situationChoices %}
+                            <option value="{{ sf.value }}" {{ situationFamilial == sf.value ? 'selected' }}>{{ sf.value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {% if this.needsConjoint %}
+                    <div class="col-12">
+                        <div class="p-3 border border-primary-subtle rounded bg-light">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="avecConjoint"
+                                       data-model="avecConjoint" {{ avecConjoint ? 'checked' }}>
+                                <label class="form-check-label fw-semibold" for="avecConjoint">
+                                    Renseigner les infos du conjoint(e)
+                                </label>
+                            </div>
+                            {% if avecConjoint %}
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <input type="text" class="form-control" data-model="conjointNom" placeholder="Nom">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" class="form-control" data-model="conjointPrenom" placeholder="Prénom">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="date" class="form-control" data-model="conjointDateNaiss">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" class="form-control" data-model="conjointProfession" placeholder="Profession">
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {# ── Enfants via EnfantsCollection DTO ──────────────────── #}
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Enfants ({{ enfants|length }})</h6>
+                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                data-action="live#action"
+                                data-live-action-param="addEnfant">
+                            + Ajouter un enfant
+                        </button>
+                    </div>
+
+                    {% if enfants %}
+                        <div class="border rounded overflow-hidden">
+                            <div class="row g-0 px-2 py-1 bg-dark text-white"
+                                 style="font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">
+                                <div class="col-3">Nom</div>
+                                <div class="col-3">Prénom</div>
+                                <div class="col-3">Date naissance</div>
+                                <div class="col-2">Sexe</div>
+                                <div class="col-1"></div>
+                            </div>
+                            {% for i, enfant in enfants %}
+                                <div class="row g-2 px-2 py-2 border-top align-items-center {{ loop.index is even ? 'bg-light' }}">
+                                    <div class="col-3">
+                                        <input type="text" class="form-control form-control-sm"
+                                               placeholder="Nom"
+                                               data-model="enfants[{{ i }}].nom">
+                                    </div>
+                                    <div class="col-3">
+                                        <input type="text" class="form-control form-control-sm"
+                                               placeholder="Prénom"
+                                               data-model="enfants[{{ i }}].prenom">
+                                    </div>
+                                    <div class="col-3">
+                                        <input type="date" class="form-control form-control-sm"
+                                               data-model="enfants[{{ i }}].dateNaiss">
+                                    </div>
+                                    <div class="col-2">
+                                        <select class="form-select form-select-sm"
+                                                data-model="enfants[{{ i }}].sexe">
+                                            <option value="">--</option>
+                                            <option value="Homme" {{ enfant.sexe == 'Homme' ? 'selected' }}>Homme</option>
+                                            <option value="Femme" {{ enfant.sexe == 'Femme' ? 'selected' }}>Femme</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-1 text-center">
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                data-action="live#action"
+                                                data-live-action-param="removeEnfant"
+                                                data-live-index-param="{{ i }}">✕</button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted small fst-italic mb-0">Aucun enfant renseigné.</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        {# ═══════════════════════════════════════════════════════════════════
+           COMPTE & ACCÈS
+        ══════════════════════════════════════════════════════════════════════ #}
+        <div class="form-section">
+            <h5 class="section-title">Compte & Accès</h5>
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label required">Nom d'utilisateur</label>
+                    <input type="text" class="form-control {{ _errors.has('username') ? 'is-invalid' }}"
+                           placeholder="username" data-model="username">
+                    {% if _errors.has('username') %}<div class="invalid-feedback">{{ _errors.get('username') }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label {{ editId ? '' : 'required' }}">Mot de passe</label>
+                    <input type="password" class="form-control" data-model="password"
+                           placeholder="{{ editId ? 'Laisser vide = inchangé' : 'Min. 6 caractères' }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Statut</label>
+                    <select class="form-select" data-model="statusCompte">
+                        {% for s in this.statusChoices %}
+                            <option value="{{ s.value }}" {{ statusCompte == s.value ? 'selected' }}>{{ s.value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Fonction</label>
+                    <select class="form-select" data-model="fonctionId">
+                        <option value="">-- Sélectionner --</option>
+                        {% for f in this.fonctions %}
+                            <option value="{{ f.id }}" {{ fonctionId == f.id ? 'selected' }}>{{ f.nomFon }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Rôles</label>
+                    <div class="d-flex flex-wrap gap-3 p-2 border rounded">
+                        {% for roleKey, roleLabel in this.rolesChoices %}
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input"
+                                       id="role_{{ roleKey }}"
+                                       data-model="roles[]"
+                                       value="{{ roleKey }}"
+                                       {{ roleKey in roles ? 'checked' }}>
+                                <label class="form-check-label" for="role_{{ roleKey }}">{{ roleLabel }}</label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="backFront"
+                               data-model="backFront" {{ backFront ? 'checked' }}>
+                        <label class="form-check-label" for="backFront">Accès back-office</label>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {# ── Boutons ── #}
+        <div class="form-actions">
+            <a href="{{ path('app_personnel_index') }}" class="btn btn-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary">
+                {{ editId ? 'Enregistrer' : 'Créer' }}
+            </button>
+        </div>
+
+    </form>
+</div>

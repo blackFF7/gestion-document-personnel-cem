@@ -1,0 +1,148 @@
+{# templates/personnel/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestion du Personnel{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-5 mt-5">
+    <div class="pt-5 mt-5">
+
+        {# ── Flash messages ─────────────────────────────────────────────────── #}
+        {% for type, messages in app.flashes %}
+            {% for msg in messages %}
+                <div class="alert alert-{{ type == 'success' ? 'success' : (type == 'danger' ? 'danger' : 'info') }} alert-dismissible fade show">
+                    {{ msg }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {# ── Header ─────────────────────────────────────────────────────────── #}
+        <div class="page-header">
+            <h1 class="page-title">Gestion du <span>Personnel</span></h1>
+            <a href="{{ path('app_personnel_new') }}" class="btn btn-primary">
+                Nouveau personnel
+            </a>
+        </div>
+
+        {# ── Statistiques rapides ────────────────────────────────────────────── #}
+        {% set total   = personnels|length %}
+        {% set actifs  = personnels|filter(p => p.statusCompte.value == 'Actif')|length %}
+        {% set inactifs = personnels|filter(p => p.statusCompte.value == 'Inactif')|length %}
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-num">{{ total }}</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:#16a34a">{{ actifs }}</div>
+                <div class="stat-label">Actifs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:#6b7280">{{ inactifs }}</div>
+                <div class="stat-label">Inactifs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:#d97706">{{ total - actifs - inactifs }}</div>
+                <div class="stat-label">Autres</div>
+            </div>
+        </div>
+
+        {# ── Table ───────────────────────────────────────────────────────────── #}
+        {% if personnels is empty %}
+            <div class="empty-state">
+                <div class="icon">🗂️</div>
+                <h4>Aucun personnel trouvé</h4>
+                <p>Essayez de modifier vos critères de recherche ou <a href="{{ path('app_personnel_new') }}">ajoutez un nouveau personnel</a>.</p>
+            </div>
+        {% else %}
+            <div class="table-responsive personnel-table">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>IM</th>
+                            <th>Nom complet</th>
+                            <th>Fonction</th>
+                            <th>Contact</th>
+                            <th>Statut</th>
+                            <th>Rôles</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in personnels %}
+                            <tr>
+                                <td>
+                                    {% if p.photoProfil %}
+                                        <img src="{{ asset('uploads/photos_profil/' ~ p.photoProfil) }}"
+                                            alt="{{ p.fullName }}" class="avatar">
+                                    {% else %}
+                                        <div class="avatar-placeholder">
+                                            {{ p.nomAg|first|upper }}{{ p.prenomAg|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ p.IMFormatted }}</code></td>
+                                <td>
+                                    <strong>{{ p.nomAg }}</strong> {{ p.prenomAg }}<br>
+                                    <small class="text-muted">{{ p.username }}</small>
+                                </td>
+                                <td>
+                                    {% if p.fonctionID %}
+                                        {{ p.fonctionID.nomFon }}
+                                        {% if p.fonctionID.categorieID %}
+                                            <br><small class="text-muted">{{ p.fonctionID.categorieID.designation }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if p.mailAg %}
+                                        <a href="mailto:{{ p.mailAg }}" class="text-decoration-none small">{{ p.mailAg }}</a><br>
+                                    {% endif %}
+                                    {% if p.contactAg %}
+                                        {% for contact in p.contactAg %}
+                                            <small>{{ contact }}</small><br>
+                                        {% endfor %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set sv = p.statusCompte.value %}
+                                    <span class="badge-status badge-{{ sv|lower }}">
+                                        {{ sv == 'Actif' ? '🟢' : (sv == 'Inactif' ? '⚫' : (sv == 'Suspendu' ? '🟡' : '🔴')) }}
+                                        {{ sv }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% for role in p.roles %}
+                                        <span class="badge bg-light text-dark border small">{{ role|replace({'ROLE_': ''}) }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <div class="action-btns">
+                                        <a href="{{ path('app_personnel_show', {id: p.id}) }}" class="btn-icon" title="Voir">👁</a>
+                                        <a href="{{ path('app_personnel_edit', {id: p.id}) }}" class="btn-icon" title="Modifier">✏️</a>
+                                        <form method="post" action="{{ path('app_personnel_delete', {id: p.id}) }}"
+                                            onsubmit="return confirm('Supprimer {{ p.fullName }} ?')">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete_' ~ p.id) }}">
+                                            <button type="submit" class="btn-icon danger" title="Supprimer">🗑</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <small class="text-muted mt-2 d-block">{{ personnels|length }} personnel(s) affiché(s)</small>
+
+            <div class="d-flex justify-content-center mt-4">
+                {{ knp_pagination_render(personnels) }}
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

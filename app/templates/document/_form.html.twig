@@ -1,0 +1,333 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ document is defined ? 'Modifier le document' : 'Nouveau document' }}{% endblock %}
+
+{% block body %}
+<div class="doc-form-page mt-4 pt-4 p-4 mb-4">
+
+    {{ form_start(form, {
+        attr: {
+            id: 'document_form',
+            enctype: 'multipart/form-data',
+            novalidate: 'novalidate'
+        }
+    }) }}
+
+    <div class="row g-4" data-controller="document-reference">
+
+        {# ── Colonne gauche : Upload + Prévisualisation ─────────────────────── #}
+        <div class="col-xl-5 col-lg-5 col-12">
+            <div class="card doc-preview-card h-100"
+                 data-controller="document-preview">
+
+                <div class="card-header doc-card-header">
+                    <i class="bi bi-eye me-2"></i>Fichier &amp; Aperçu
+                </div>
+
+                <div class="card-body d-flex flex-column p-3">
+
+                    {# Zone upload — contrôlée par upload-zone_controller.js #}
+                    <div class="upload-zone mb-3"
+                         data-controller="upload-zone">
+
+                        <label for="{{ form.fichierUpload.vars.id }}"
+                               class="upload-zone-label">
+                            <div class="upload-zone-icon"
+                                 data-upload-zone-target="icon">
+                                <i class="bi bi-cloud-upload"></i>
+                            </div>
+                            <div class="upload-zone-text">
+                                <span class="upload-zone-main">Cliquez pour choisir un fichier</span>
+                                <span class="upload-zone-sub">PDF, DOCX, XLSX, JPG, PNG — max 50 Mo</span>
+                            </div>
+                            <div class="upload-zone-filename"
+                                 data-upload-zone-target="filename"
+                                 hidden></div>
+                        </label>
+
+                        {{ form_widget(form.fichierUpload, {
+                            attr: {
+                                class: 'visually-hidden',
+                                'data-document-preview-target': 'input',
+                                'data-upload-zone-target': 'input',
+                                'data-action': [
+                                    'change->document-preview#showPreview',
+                                    'change->upload-zone#onFileChange',
+                                    'change->document-reference#onFileChange'
+                                ]|join(' '),
+                                id: form.fichierUpload.vars.id
+                            }
+                        }) }}
+
+                        {% if form.fichierUpload.vars.errors|length > 0 %}
+                            <div class="field-error-block mt-2">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                {% for error in form.fichierUpload.vars.errors %}
+                                    {{ error.message }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {# Bouton aperçu — visible uniquement sur mobile (< lg) #}
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm d-lg-none mb-3 w-100"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#mobilePreview"
+                            aria-expanded="false"
+                            aria-controls="mobilePreview">
+                        <i class="bi bi-eye me-1"></i>Voir l'aperçu
+                        <i class="bi bi-chevron-down ms-1 toggle-chevron"></i>
+                    </button>
+
+                    {# Zone aperçu #}
+                    <div class="preview-container collapse d-lg-block flex-fill"
+                         id="mobilePreview"
+                         data-document-preview-target="preview">
+
+                        {% if document is defined and document.fichier is not null %}
+                            {% set ext = document.fichier|split('.')|last|lower %}
+                            <div class="preview-existing">
+                                {% if ext in ['png','jpg','jpeg','webp','gif'] %}
+                                    <img src="{{ vich_uploader_asset(document, 'fichierUpload') }}"
+                                         class="preview-img"
+                                         alt="Aperçu du document">
+                                {% else %}
+                                    <div class="preview-file-icon">
+                                        {% if ext == 'pdf' %}
+                                            <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                        {% elseif ext in ['doc','docx'] %}
+                                            <i class="bi bi-file-earmark-word text-primary"></i>
+                                        {% elseif ext in ['xls','xlsx'] %}
+                                            <i class="bi bi-file-earmark-excel text-success"></i>
+                                        {% else %}
+                                            <i class="bi bi-file-earmark text-secondary"></i>
+                                        {% endif %}
+                                        <span class="preview-file-name">{{ document.fichier }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="preview-placeholder"
+                                 data-document-preview-target="placeholder">
+                                <i class="bi bi-image text-muted"></i>
+                                <span>L'aperçu apparaîtra ici</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        {# ── Colonne droite : Formulaire ────────────────────────────────────── #}
+        <div class="col-xl-7 col-lg-7 col-12">
+            <div class="card doc-fields-card">
+
+                <div class="card-header doc-card-header">
+                    <i class="bi bi-pencil-square me-2"></i>Informations du document
+                </div>
+
+                <div class="card-body p-3 p-md-4">
+                    <div class="row g-3">
+
+                        {# Référence — lecture seule, auto-générée #}
+                        <div class="col-12">
+                            <div class="form-floating has-readonly">
+                                {{ form_widget(form.reference, {
+                                    attr: {
+                                        class: 'form-control' ~ (form.reference.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                        readonly: 'readonly',
+                                        placeholder: 'Référence auto-générée',
+                                        'data-document-reference-target': 'reference'
+                                    }
+                                }) }}
+                                {{ form_label(form.reference) }}
+                                <div class="readonly-badge">
+                                    <i class="bi bi-lock-fill"></i> Auto
+                                </div>
+                                {% if form.reference.vars.errors|length > 0 %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.reference.vars.errors %}{{ error.message }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Titre #}
+                        <div class="col-12">
+                            <div class="form-floating">
+                                {{ form_widget(form.titre, {
+                                    attr: {
+                                        class: 'form-control' ~ (form.titre.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                        placeholder: 'Titre du document',
+                                        'data-document-reference-target': 'titre'
+                                    }
+                                }) }}
+                                {{ form_label(form.titre) }}
+                                {% if form.titre.vars.errors|length > 0 %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.titre.vars.errors %}{{ error.message }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Titulaire + Date d'arrivée #}
+                        <div class="col-sm-6">
+                            <div class="form-floating">
+                                {{ form_widget(form.titulaire, {
+                                    attr: {
+                                        class: 'form-control' ~ (form.titulaire.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                        placeholder: 'Titulaire',
+                                        'data-document-reference-target': 'titulaire',
+                                        'data-action': 'input->document-reference#generate'
+                                    }
+                                }) }}
+                                {{ form_label(form.titulaire) }}
+                                {% if form.titulaire.vars.errors|length > 0 %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.titulaire.vars.errors %}{{ error.message }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div class="form-floating">
+                                {{ form_widget(form.dateArriveDoc, {
+                                    attr: {
+                                        class: 'form-control' ~ (form.dateArriveDoc.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                        placeholder: "Date d'arrivée",
+                                        'data-document-reference-target': 'date',
+                                        'data-action': 'change->document-reference#generate input->document-reference#generate'
+                                    }
+                                }) }}
+                                {{ form_label(form.dateArriveDoc) }}
+                                {% if form.dateArriveDoc.vars.errors|length > 0 %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.dateArriveDoc.vars.errors %}{{ error.message }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Type de document (autocomplete Tom Select) #}
+                        <div class="col-12">
+                            <div class="autocomplete-field-wrapper">
+                                <label class="autocomplete-label {% if form.typeDocumentID.vars.errors|length > 0 %}text-danger{% endif %}">
+                                    {{ form_label(form.typeDocumentID)|striptags }}
+                                    <span class="text-danger ms-1">*</span>
+                                </label>
+                                {{ form_widget(form.typeDocumentID, {
+                                    attr: {
+                                        class: 'autocomplete-input' ~ (form.typeDocumentID.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                        'data-document-reference-target': 'typeDocument'
+                                    }
+                                }) }}
+                                {% if form.typeDocumentID.vars.errors|length > 0 %}
+                                    <div class="field-error-block mt-1">
+                                        <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                        {% for error in form.typeDocumentID.vars.errors %}{{ error.message }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Personnel (autocomplete Tom Select) #}
+                        <div class="col-12">
+                            <div class="autocomplete-field-wrapper">
+                                <label class="autocomplete-label {% if form.personnelID.vars.errors|length > 0 %}text-danger{% endif %}">
+                                    {{ form_label(form.personnelID)|striptags }}
+                                    <span class="text-danger ms-1">*</span>
+                                </label>
+                                {{ form_widget(form.personnelID, {
+                                    attr: {
+                                        class: 'autocomplete-input' ~ (form.personnelID.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                        'data-document-reference-target': 'personnel'
+                                    }
+                                }) }}
+                                {% if form.personnelID.vars.errors|length > 0 %}
+                                    <div class="field-error-block mt-1">
+                                        <i class="bi bi-exclamation-circle-fill me-1"></i>
+                                        {% for error in form.personnelID.vars.errors %}{{ error.message }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Description #}
+                        <div class="col-12">
+                            <div class="form-floating">
+                                {{ form_widget(form.description, {
+                                    attr: {
+                                        class: 'form-control' ~ (form.description.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                        placeholder: 'Description',
+                                        style: 'height: 90px; resize: none;'
+                                    }
+                                }) }}
+                                {{ form_label(form.description) }}
+                                {% if form.description.vars.errors|length > 0 %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.description.vars.errors %}{{ error.message }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Statut #}
+                        <div class="col-12">
+                            <div class="form-floating">
+                                {{ form_widget(form.statucDoc, {
+                                    attr: {
+                                        class: 'form-select' ~ (form.statucDoc.vars.errors|length > 0 ? ' is-invalid' : ''),
+                                        placeholder: 'Statut'
+                                    }
+                                }) }}
+                                {{ form_label(form.statucDoc) }}
+                                {% if form.statucDoc.vars.errors|length > 0 %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.statucDoc.vars.errors %}{{ error.message }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                    </div>{# /row #}
+
+                    {# Erreurs globales du formulaire #}
+                    {% if form.vars.errors|length > 0 %}
+                        <div class="alert alert-danger d-flex align-items-start gap-2 mt-3 mb-0 py-2">
+                            <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                            <div>
+                                {% for error in form.vars.errors %}
+                                    <div>{{ error.message }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {# Boutons d'action #}
+                    <div class="doc-form-actions mt-4">
+                        <a href="{{ path('document_index') }}"
+                           class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Retour
+                        </a>
+                        <button type="submit"
+                                form="document_form"
+                                class="btn btn-primary doc-submit-btn btn-sm">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {{ document is defined ? 'Enregistrer les modifications' : 'Créer le document' }}
+                        </button>
+                    </div>
+
+                </div>{# /card-body #}
+            </div>{# /card #}
+        </div>{# /col #}
+
+    </div>{# /row #}
+
+    {{ form_end(form) }}
+
+</div>{# /doc-form-page #}
+{% endblock %}

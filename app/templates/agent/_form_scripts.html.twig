@@ -1,0 +1,322 @@
+{# ══════════════════════════════════
+   SCRIPTS  (remplace le bloc <script> existant)
+   ══════════════════════════════════ #}
+<script>
+function scrollToSection(id) {
+    document.getElementById(id)?.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function togglePwd(id, btn) {
+    const inp = document.getElementById(id);
+    const show = inp.type === 'text';
+    inp.type = show ? 'password' : 'text';
+    btn.querySelector('i').className = show ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* ── Photo preview ── */
+    const photoInput = document.querySelector('#photoFileInput, input[name*="photoProfilFile"], .pf-file-wrap input[type="file"]');
+    if (photoInput) {
+        photoInput.addEventListener('change', function () {
+            const f = this.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const preview  = document.getElementById('previewImg');
+                const initials = document.getElementById('previewInitials');
+                if (preview) preview.src = e.target.result;
+                else if (initials) initials.outerHTML = `<img src="${e.target.result}" class="pf-avatar-img" id="previewImg" alt="Photo">`;
+            };
+            reader.readAsDataURL(f);
+        });
+    }
+
+    /* ── Auto username toggle ── */
+    const autoSwitch   = document.getElementById('autoUsernameSwitch');
+    const usernameWrap = document.getElementById('usernameFieldWrap');
+    if (autoSwitch && usernameWrap) {
+        const toggle = () => { usernameWrap.style.display = autoSwitch.checked ? 'none' : 'block'; };
+        toggle();
+        autoSwitch.addEventListener('change', toggle);
+    }
+
+    /* ── Avatar initiales live ── */
+    const nomInput    = document.getElementById('nomInput');
+    const prenomInput = document.getElementById('prenomInput');
+    function updateInitials() {
+        const el = document.getElementById('previewInitials');
+        if (!el) return;
+        el.textContent = ((nomInput?.value.trim()[0] || 'N') + (prenomInput?.value.trim()[0] || 'P')).toUpperCase();
+    }
+    nomInput?.addEventListener('input', updateInitials);
+    prenomInput?.addEventListener('input', updateInitials);
+
+    /* ── Restaurer BackFront au rechargement ── */
+    const bfField = document.getElementById('backFrontHidden');
+    if (bfField) {
+        const val = bfField.value;
+        if (val === '1' || val === 'true')  document.getElementById('affTypeAgence')?.click();
+        if (val === '0' || val === 'false') document.getElementById('affTypeService')?.click();
+    }
+
+    /* ── Téléphones ── */
+    initPhones();
+
+    /* ── Situation familiale ── */
+    const sitSel = document.getElementById('situationSelect');
+    if (sitSel) toggleConjoint(sitSel.value);
+
+    /* ── Enfants count ── */
+    updateEnfantCount();
+
+    /* ── Styles rôles ── */
+    document.querySelectorAll('.pf-role-label').forEach(label => {
+        const cb = label.querySelector('input[type="checkbox"]');
+        function updateStyle() {
+            label.style.background  = cb.checked ? 'var(--pf-accent-lt)' : '#fafbfc';
+            label.style.borderColor = cb.checked ? 'var(--pf-accent)'    : 'var(--pf-border)';
+            label.style.color       = cb.checked ? 'var(--pf-accent)'    : '';
+        }
+        updateStyle();
+        cb.addEventListener('change', updateStyle);
+    });
+
+    /* ── Direction liée au service (Tom Select Ajax) ─────────────────────
+     *
+     * Avec ux-autocomplete, Tom Select charge les résultats via Ajax.
+     * L'événement "item_add" reçoit uniquement la VALEUR (UUID) et un <div>
+     * généré par Tom Select — PAS l'élément <option> original avec ses data-*.
+     *
+     * Stratégie correcte :
+     *   1. Écouter "item_add(value)" → on a l'UUID du service sélectionné.
+     *   2. Lire cet UUID depuis le <select> natif sous-jacent :
+     *      après qu'un item est ajouté, Tom Select crée/sélectionne l'<option>
+     *      dans le <select> natif et y copie les attributs "data-*".
+     *   3. Lire data-direction-nom depuis cette <option>.
+     *
+     * Si les data-* ne sont pas encore dans le DOM natif au moment de l'event,
+     * on interroge directement l'API Ajax via fetch pour récupérer le libellé
+     * de la direction (fallback fiable).
+     * ──────────────────────────────────────────────────────────────────── */
+    function initServiceDirectionSync() {
+        // Le <select> natif est celui qui porte le name du champ serviceField
+        const nativeSelect = document.querySelector('select[name$="[serviceField]"]');
+        if (!nativeSelect) return;
+
+        // Tom Select est attaché à nativeSelect.tomselect une fois initialisé
+        const ts = nativeSelect.tomselect;
+        if (!ts) return;
+
+        function updateDirection(serviceUuid) {
+            const dirDisplay = document.getElementById('directionDisplay');
+            if (!dirDisplay) return;
+
+            if (!serviceUuid) {
+                dirDisplay.value = '';
+                return;
+            }
+
+            // 1er essai : lire l'<option> native (disponible après sélection locale)
+            const option = nativeSelect.querySelector(`option[value="${serviceUuid}"]`);
+            if (option && option.dataset.directionNom) {
+                dirDisplay.value = option.dataset.directionNom;
+                return;
+            }
+
+            // 2e essai : lire depuis le cache interne de Tom Select
+            const tsOption = ts.options[serviceUuid];
+            if (tsOption) {
+                // Tom Select stocke les données dans l'objet option
+                // Les attributs data-* sont disponibles dans tsOption.$div ou tsOption
+                const nom = tsOption['data-direction-nom']
+                         ?? tsOption.dataset?.directionNom
+                         ?? '';
+                if (nom) {
+                    dirDisplay.value = nom;
+                    return;
+                }
+            }
+
+            // 3e essai (fallback Ajax) : appel à l'endpoint autocomplete
+            // pour récupérer les infos de ce service précis
+            const autocompleteUrl = nativeSelect.closest('[data-autocomplete-url]')
+                                 ?? nativeSelect.closest('form')
+                                       ?.querySelector('[data-autocomplete-url]');
+            const baseUrl = autocompleteUrl?.dataset?.autocompleteUrl
+                         ?? nativeSelect.dataset?.autocompleteUrl;
+
+            if (baseUrl) {
+                fetch(`${baseUrl}&query=&extra[id]=${encodeURIComponent(serviceUuid)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        // Chercher l'item correspondant dans les résultats
+                        const results = data.results ?? [];
+                        const found   = results.find(r => String(r.value) === String(serviceUuid));
+                        if (found && found['data-direction-nom']) {
+                            dirDisplay.value = found['data-direction-nom'];
+                        }
+                    })
+                    .catch(() => {});
+            }
+        }
+
+        ts.on('item_add', (value) => {
+            // Petit délai pour laisser Tom Select créer l'<option> native
+            setTimeout(() => updateDirection(value), 50);
+        });
+
+        ts.on('item_remove', () => {
+            const dirDisplay = document.getElementById('directionDisplay');
+            if (dirDisplay) dirDisplay.value = '';
+        });
+
+        // Pré-remplir si une valeur est déjà sélectionnée (page d'édition)
+        const currentValue = nativeSelect.value;
+        if (currentValue) {
+            setTimeout(() => updateDirection(currentValue), 100);
+        }
+    }
+
+    // Tom Select est initialisé de façon asynchrone par Stimulus/UX.
+    // On utilise un MutationObserver pour détecter quand .tomselect est dispo.
+    const nativeSel = document.querySelector('select[name$="[serviceField]"]');
+    if (nativeSel) {
+        if (nativeSel.tomselect) {
+            // Déjà init
+            initServiceDirectionSync();
+        } else {
+            // Attendre l'init de Tom Select
+            const observer = new MutationObserver(() => {
+                if (nativeSel.tomselect) {
+                    observer.disconnect();
+                    initServiceDirectionSync();
+                }
+            });
+            // Observer les changements d'attributs + ajout de classes sur le parent
+            observer.observe(nativeSel.parentElement ?? document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+            });
+            // Fallback délai max 2s
+            setTimeout(() => {
+                observer.disconnect();
+                if (nativeSel.tomselect) initServiceDirectionSync();
+            }, 2000);
+        }
+    }
+});
+
+/* ── Affectation switch ── */
+function switchAffectation(type) {
+    const panelA  = document.getElementById('panelAgence');
+    const panelS  = document.getElementById('panelService');
+    const cardA   = document.getElementById('affAgenceCard');
+    const cardS   = document.getElementById('affServiceCard');
+    const bfField = document.getElementById('backFrontHidden');
+
+    panelA.style.display = type === 'agence'  ? 'block' : 'none';
+    panelS.style.display = type === 'service' ? 'block' : 'none';
+    cardA.classList.toggle('selected', type === 'agence');
+    cardS.classList.toggle('selected', type === 'service');
+
+    if (bfField) {
+        for (const opt of bfField.options) {
+            opt.selected = (type === 'agence'  && (opt.value === '1' || opt.value === 'true'))
+                        || (type === 'service' && (opt.value === '0' || opt.value === 'false'));
+        }
+    }
+}
+
+/* ── Téléphones ── */
+function initPhones() {
+    const hidden = document.getElementById('contactAgHidden');
+    if (!hidden) return;
+    let phones = [];
+    try { phones = JSON.parse(hidden.value || '[]'); } catch(e) {}
+    phones.forEach(p => addPhone(p));
+    if (!phones.length) addPhone('');
+}
+
+let phoneIdx = 0;
+function addPhone(value = '') {
+    const list = document.getElementById('phoneList');
+    const div  = document.createElement('div');
+    div.className = 'pf-phone-item';
+    div.innerHTML = `
+        <div class="pf-icon-wrap" style="flex:1;">
+            <i class="bi bi-telephone pf-ico"></i>
+            <input type="tel" class="pf-input phone-input" placeholder="+261 …"
+                   value="${value}" oninput="syncPhones()">
+        </div>
+        <button type="button" class="pf-phone-remove" onclick="removePhone(this)" title="Supprimer">
+            <i class="bi bi-dash-lg"></i>
+        </button>`;
+    list.appendChild(div);
+    syncPhones();
+}
+function removePhone(btn) {
+    btn.closest('.pf-phone-item')?.remove();
+    syncPhones();
+}
+function syncPhones() {
+    const phones = Array.from(document.querySelectorAll('.phone-input'))
+                        .map(i => i.value.trim()).filter(Boolean);
+    const hidden = document.getElementById('contactAgHidden');
+    if (hidden) hidden.value = JSON.stringify(phones);
+}
+
+/* ── Situation familiale ── */
+function toggleConjoint(val) {
+    const sec = document.getElementById('conjointSection');
+    if (sec) sec.style.display = (val === 'Marié' || val === 'Marié(e)') ? 'block' : 'none';
+}
+
+/* ── Enfants ── */
+let enfantIdx = 100;
+function addEnfant() {
+    const list = document.getElementById('enfantsList');
+    const idx  = enfantIdx++;
+    const div  = document.createElement('div');
+    div.className = 'pf-famille-card';
+    div.setAttribute('data-enfant', '');
+    div.innerHTML = `
+        <div class="pf-famille-card-head">
+            <span class="pf-famille-card-title"><i class="bi bi-person-fill me-1"></i>Enfant</span>
+            <button type="button" class="pf-remove-card" onclick="removeCard(this)"><i class="bi bi-trash3"></i></button>
+        </div>
+        <div class="row g-2">
+            <div class="col-12 col-sm-3">
+                <label class="pf-label">Nom</label>
+                <input type="text" name="personnel[enfants][${idx}][nom]" class="pf-input" placeholder="Nom">
+            </div>
+            <div class="col-12 col-sm-3">
+                <label class="pf-label">Prénom</label>
+                <input type="text" name="personnel[enfants][${idx}][prenom]" class="pf-input" placeholder="Prénom">
+            </div>
+            <div class="col-7 col-sm-3">
+                <label class="pf-label">Date naiss.</label>
+                <input type="date" name="personnel[enfants][${idx}][dateNaiss]" class="pf-input">
+            </div>
+            <div class="col-5 col-sm-3">
+                <label class="pf-label">Sexe</label>
+                <select name="personnel[enfants][${idx}][sexe]" class="pf-select">
+                    <option value="Homme">Homme</option>
+                    <option value="Femme">Femme</option>
+                </select>
+            </div>
+        </div>`;
+    list.appendChild(div);
+    updateEnfantCount();
+}
+function removeCard(btn) {
+    btn.closest('[data-enfant]')?.remove();
+    updateEnfantCount();
+}
+function updateEnfantCount() {
+    const count = document.querySelectorAll('[data-enfant]').length;
+    const el = document.getElementById('enfantCount');
+    if (el) el.textContent = `(${count})`;
+}
+</script>

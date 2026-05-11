@@ -1,0 +1,832 @@
+{# templates/components/DocumentFormComponent.html.twig #}
+
+<div {{ attributes }} class="doc-form-wrapper">
+
+    {# ── Styles & Variables CSS ────────────────────────────────────────────── #}
+    <style>
+        :root {
+            --doc-bg: #0f1117;
+            --doc-surface: #1a1d27;
+            --doc-surface2: #232636;
+            --doc-border: rgba(255,255,255,0.08);
+            --doc-accent: #6c8eff;
+            --doc-accent2: #a78bfa;
+            --doc-success: #34d399;
+            --doc-danger: #f87171;
+            --doc-warning: #fbbf24;
+            --doc-text: #e2e8f0;
+            --doc-muted: #64748b;
+            --doc-input-bg: #0d1020;
+            --doc-glow: 0 0 20px rgba(108,142,255,0.15);
+            --doc-radius: 14px;
+            --doc-radius-sm: 8px;
+        }
+
+        .doc-form-wrapper {
+            font-family: 'DM Sans', 'Segoe UI', sans-serif;
+            color: var(--doc-text);
+            min-height: 100vh;
+            padding: 1.5rem 1rem;
+        }
+
+        /* Header */
+        .doc-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .doc-header-icon {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, var(--doc-accent), var(--doc-accent2));
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: var(--doc-glow);
+            flex-shrink: 0;
+        }
+        .doc-header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+        .doc-header p { color: var(--doc-muted); margin: 0; font-size: 0.85rem; }
+
+        /* Layout 2 colonnes */
+        .doc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        @media(max-width: 900px) {
+            .doc-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Cards */
+        .doc-card {
+            background: var(--doc-surface);
+            border: 1px solid var(--doc-border);
+            border-radius: var(--doc-radius);
+            padding: 1.5rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
+        .doc-card-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--doc-muted);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .doc-card-title::before {
+            content: '';
+            width: 3px; height: 14px;
+            background: linear-gradient(var(--doc-accent), var(--doc-accent2));
+            border-radius: 2px;
+        }
+
+        /* Zone de preview */
+        .preview-zone {
+            background: var(--doc-input-bg);
+            border: 2px dashed var(--doc-border);
+            border-radius: var(--doc-radius);
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.25s, background 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+        .preview-zone.has-file {
+            border-style: solid;
+            border-color: var(--doc-accent);
+        }
+        .preview-zone.drag-over {
+            border-color: var(--doc-accent2);
+            background: rgba(108,142,255,0.05);
+        }
+        .preview-zone iframe, .preview-zone img {
+            width: 100%; height: 100%;
+            min-height: 340px;
+            object-fit: contain;
+            border-radius: var(--doc-radius-sm);
+        }
+        .preview-placeholder {
+            text-align: center;
+            color: var(--doc-muted);
+        }
+        .preview-placeholder svg {
+            width: 48px; height: 48px;
+            margin-bottom: 0.75rem;
+            opacity: 0.4;
+        }
+        .preview-placeholder p { font-size: 0.85rem; margin: 0; }
+
+        /* File input stylé */
+        .file-upload-area {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .file-upload-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.65rem 1.1rem;
+            background: var(--doc-surface2);
+            border: 1px solid var(--doc-border);
+            border-radius: var(--doc-radius-sm);
+            color: var(--doc-text);
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            justify-content: center;
+        }
+        .file-upload-btn:hover {
+            border-color: var(--doc-accent);
+            background: rgba(108,142,255,0.08);
+            color: var(--doc-accent);
+        }
+        .file-upload-btn input[type="file"] {
+            position: absolute; inset: 0; opacity: 0; cursor: pointer;
+        }
+        .file-name-display {
+            font-size: 0.8rem;
+            color: var(--doc-muted);
+            text-align: center;
+            margin-top: 0.4rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Champs flottants */
+        .field-group {
+            position: relative;
+            margin-bottom: 1.1rem;
+        }
+        .field-group label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--doc-muted);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .field-group .badge-optional {
+            font-size: 0.65rem;
+            background: rgba(100,116,139,0.2);
+            color: var(--doc-muted);
+            border-radius: 4px;
+            padding: 1px 5px;
+            margin-left: 4px;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .field-group input,
+        .field-group select,
+        .field-group textarea {
+            width: 100%;
+            background: var(--doc-input-bg);
+            border: 1px solid var(--doc-border);
+            border-radius: var(--doc-radius-sm);
+            color: var(--doc-text);
+            padding: 0.6rem 0.85rem;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            font-family: inherit;
+        }
+        .field-group input:focus,
+        .field-group select:focus,
+        .field-group textarea:focus {
+            border-color: var(--doc-accent);
+            box-shadow: 0 0 0 3px rgba(108,142,255,0.12);
+        }
+        .field-group input:disabled,
+        .field-group select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .field-group input.is-invalid,
+        .field-group select.is-invalid {
+            border-color: var(--doc-danger);
+        }
+        .field-group .invalid-feedback {
+            color: var(--doc-danger);
+            font-size: 0.78rem;
+            margin-top: 0.25rem;
+        }
+        .field-group select option {
+            background: var(--doc-surface);
+            color: var(--doc-text);
+        }
+
+        /* Référence badge */
+        .reference-display {
+            background: linear-gradient(135deg, rgba(108,142,255,0.1), rgba(167,139,250,0.1));
+            border: 1px solid rgba(108,142,255,0.3);
+            border-radius: var(--doc-radius-sm);
+            padding: 0.65rem 1rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.82rem;
+            color: var(--doc-accent);
+            letter-spacing: 0.04em;
+            word-break: break-all;
+            min-height: 2.5rem;
+            display: flex;
+            align-items: center;
+        }
+        .reference-empty {
+            color: var(--doc-muted);
+            font-style: italic;
+            font-family: inherit;
+        }
+
+        /* Type doc row avec bouton + */
+        .type-doc-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        .type-doc-row .field-group { flex: 1; margin-bottom: 0; }
+        .btn-add-type {
+            flex-shrink: 0;
+            height: 38px;
+            width: 38px;
+            background: linear-gradient(135deg, var(--doc-accent), var(--doc-accent2));
+            border: none;
+            border-radius: var(--doc-radius-sm);
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.2s, transform 0.2s;
+            box-shadow: var(--doc-glow);
+        }
+        .btn-add-type:hover { opacity: 0.85; transform: scale(1.05); }
+
+        /* Statut badge */
+        .status-chips {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .status-chip {
+            padding: 0.35rem 0.85rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .status-chip[data-status="Brouillon"] { background: rgba(100,116,139,0.15); color: var(--doc-muted); border-color: rgba(100,116,139,0.3); }
+        .status-chip[data-status="Brouillon"].active { background: var(--doc-muted); color: white; border-color: var(--doc-muted); }
+        .status-chip[data-status="Soumis"] { background: rgba(251,191,36,0.1); color: var(--doc-warning); border-color: rgba(251,191,36,0.3); }
+        .status-chip[data-status="Soumis"].active { background: var(--doc-warning); color: #1a1000; }
+        .status-chip[data-status="Archivé"] { background: rgba(52,211,153,0.1); color: var(--doc-success); border-color: rgba(52,211,153,0.3); }
+        .status-chip[data-status="Archivé"].active { background: var(--doc-success); color: #001a10; }
+
+        /* Personnel badge (non-SAP) */
+        .personnel-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 1rem;
+            background: rgba(108,142,255,0.08);
+            border: 1px solid rgba(108,142,255,0.2);
+            border-radius: var(--doc-radius-sm);
+        }
+        .personnel-badge .avatar {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--doc-accent), var(--doc-accent2));
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+        .personnel-badge .name { font-size: 0.9rem; font-weight: 600; }
+        .personnel-badge .im { font-size: 0.75rem; color: var(--doc-muted); }
+        .personnel-badge .lock { margin-left: auto; color: var(--doc-muted); font-size: 0.85rem; }
+
+        /* Actions */
+        .doc-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-doc {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.4rem;
+            border-radius: var(--doc-radius-sm);
+            font-size: 0.88rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .btn-doc-primary {
+            background: linear-gradient(135deg, var(--doc-accent), var(--doc-accent2));
+            color: white;
+            box-shadow: 0 4px 16px rgba(108,142,255,0.3);
+        }
+        .btn-doc-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-doc-secondary {
+            background: var(--doc-surface2);
+            color: var(--doc-text);
+            border: 1px solid var(--doc-border);
+        }
+        .btn-doc-secondary:hover { border-color: var(--doc-accent); color: var(--doc-accent); }
+
+        /* Modale */
+        .doc-modal-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+            animation: fadeIn 0.15s ease;
+        }
+        @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+        .doc-modal {
+            background: var(--doc-surface);
+            border: 1px solid var(--doc-border);
+            border-radius: var(--doc-radius);
+            padding: 1.75rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+            animation: slideUp 0.2s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity:0 } to { transform: translateY(0); opacity:1 } }
+        .doc-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+        .doc-modal-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .btn-close-modal {
+            background: none;
+            border: none;
+            color: var(--doc-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.2rem;
+            transition: color 0.2s;
+        }
+        .btn-close-modal:hover { color: var(--doc-text); }
+        .modal-error {
+            background: rgba(248,113,113,0.1);
+            border: 1px solid rgba(248,113,113,0.3);
+            color: var(--doc-danger);
+            padding: 0.6rem 0.9rem;
+            border-radius: var(--doc-radius-sm);
+            font-size: 0.83rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Loading */
+        .preview-loading {
+            display: none;
+            position: absolute; inset: 0;
+            background: rgba(15,17,23,0.9);
+            align-items: center; justify-content: center;
+            border-radius: var(--doc-radius);
+        }
+        .preview-loading.show { display: flex; }
+        .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid rgba(108,142,255,0.2);
+            border-top-color: var(--doc-accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--doc-border); border-radius: 3px; }
+    </style>
+
+    {# ── Header ─────────────────────────────────────────────────────────────── #}
+    <div class="doc-header">
+        <div class="doc-header-icon">📄</div>
+        <div>
+            <h1>{{ document ? 'Modifier le document' : 'Nouveau document' }}</h1>
+            <p>{{ document ? 'Mise à jour du fichier et des métadonnées' : 'Ajouter un document au système de gestion' }}</p>
+        </div>
+    </div>
+
+    {# ── Grid principal ──────────────────────────────────────────────────────── #}
+    <form method="post" enctype="multipart/form-data" id="doc-main-form"
+          data-controller="doc-form"
+          data-doc-form-preview-url-value="{{ path('document_preview_temp') }}"
+          data-doc-form-cleanup-url-value="{{ path('document_preview_cleanup') }}">
+
+        <input type="hidden" name="_token" value="{{ csrf_token('document_form') }}">
+        <input type="hidden" name="reference" value="{{ reference }}">
+
+        <div class="doc-grid">
+
+            {# ═══════════════════════════════════════════════════════════════
+               COLONNE GAUCHE : Upload + Preview
+            ═══════════════════════════════════════════════════════════════ #}
+            <div>
+                <div class="doc-card">
+                    <div class="doc-card-title">📎 Fichier</div>
+
+                    {# Zone upload #}
+                    <div class="file-upload-area">
+                        <label class="file-upload-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                            Choisir un fichier
+                            <input type="file" name="fichierUpload" accept=".pdf,.docx,.xlsx,image/*"
+                                   data-doc-form-target="fileInput"
+                                   data-action="change->doc-form#onFileChange">
+                        </label>
+                        <div class="file-name-display" data-doc-form-target="fileName">
+                            {{ document and document.fichier ? document.fichier : 'Aucun fichier sélectionné' }}
+                        </div>
+                        <div style="font-size:0.73rem; color:var(--doc-muted); text-align:center; margin-top:0.3rem;">
+                            PDF · DOCX · XLSX · Images — Max 50 MB
+                        </div>
+                    </div>
+
+                    {# Zone preview #}
+                    <div class="preview-zone {% if document and document.fichier %}has-file{% endif %}"
+                         id="preview-zone"
+                         data-doc-form-target="previewZone">
+
+                        <div class="preview-loading" id="preview-loading" data-doc-form-target="loading">
+                            <div class="spinner"></div>
+                        </div>
+
+                        <div data-doc-form-target="previewContent" style="width:100%; height:100%;">
+                            {% if preview is defined and preview %}
+                                {% set ext = preview|split('.')|last|lower %}
+                                {% if ext in ['png','jpg','jpeg','webp','gif'] %}
+                                    <img src="{{ preview }}" alt="Aperçu" style="width:100%; height:100%; object-fit:contain; border-radius:8px;">
+                                {% else %}
+                                    <iframe src="{{ preview }}#toolbar=0&navpanes=0" width="100%" style="min-height:340px; border-radius:8px; border:none;"></iframe>
+                                {% endif %}
+                            {% else %}
+                                <div class="preview-placeholder">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                    </svg>
+                                    <p>L'aperçu du fichier<br>apparaîtra ici</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            {# ═══════════════════════════════════════════════════════════════
+               COLONNE DROITE : Champs formulaire
+            ═══════════════════════════════════════════════════════════════ #}
+            <div>
+                <div class="doc-card">
+                    <div class="doc-card-title">📋 Informations</div>
+
+                    {# ── Référence (auto, lecture seule) ── #}
+                    <div class="field-group">
+                        <label>Référence <span style="color:var(--doc-danger)">*</span></label>
+                        <div class="reference-display" id="reference-display">
+                            {% if reference %}
+                                {{ reference }}
+                            {% else %}
+                                <span class="reference-empty">Sera générée automatiquement...</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# ── Type de document + bouton + ── #}
+                    <div class="field-group">
+                        <label>Type de document <span style="color:var(--doc-danger)">*</span></label>
+                        <div class="type-doc-row">
+                            <div class="field-group" style="flex:1; margin-bottom:0;">
+                                <select name="typeDocumentID"
+                                        data-model="typeDocumentId"
+                                        data-action="live#update change->doc-form#onTypeChange">
+                                    <option value="">— Choisir —</option>
+                                    {% for td in typeDocuments %}
+                                        <option value="{{ td.id }}"
+                                            {% if typeDocumentId == td.id %}selected{% endif %}>
+                                            {{ td.nomTypeDoc }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="button"
+                                    class="btn-add-type"
+                                    title="Ajouter un nouveau type"
+                                    data-action="live#action"
+                                    data-live-action-param="openTypeDocModal">
+                                +
+                            </button>
+                        </div>
+                    </div>
+
+                    {# ── Titre (auto-rempli) ── #}
+                    <div class="field-group">
+                        <label>Titre <span style="color:var(--doc-danger)">*</span></label>
+                        <input type="text" name="titre"
+                               data-model="titre"
+                               value="{{ titre }}"
+                               placeholder="Titre du document">
+                    </div>
+
+                    {# ── Personnel (SAP = select, autres = badge locked) ── #}
+                    <div class="field-group">
+                        <label>
+                            Propriétaire
+                            {% if not isSapOrAdmin %}
+                                <span class="badge-optional">verrouillé</span>
+                            {% endif %}
+                        </label>
+                        {% if isSapOrAdmin %}
+                            <select name="personnelID"
+                                    data-model="personnelId"
+                                    data-action="live#update">
+                                <option value="">— Sélectionner —</option>
+                                {% for p in personnels %}
+                                    <option value="{{ p.id }}"
+                                        {% if personnelId == p.id %}selected{% endif %}>
+                                        {{ p.getIMFormatted() }} — {{ p.nomAg }} {{ p.prenomAg }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            {% set me = getCurrentPersonnel %}
+                            {% if me %}
+                                <div class="personnel-badge">
+                                    <div class="avatar">
+                                        {{ me.nomAg|first|upper }}{{ me.prenomAg|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="name">{{ me.nomAg }} {{ me.prenomAg }}</div>
+                                        <div class="im">IM {{ me.getIMFormatted() }}</div>
+                                    </div>
+                                    <div class="lock">🔒</div>
+                                </div>
+                                <input type="hidden" name="personnelID" value="{{ me.id }}">
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    {# ── Titulaire + Date (grid 2 cols) ── #}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="field-group">
+                            <label>Titulaire <span class="badge-optional">optionnel</span></label>
+                            <input type="text" name="titulaire"
+                                   data-model="titulaire"
+                                   value="{{ titulaire }}"
+                                   placeholder="Nom du titulaire">
+                        </div>
+                        <div class="field-group">
+                            <label>Date d'arrivée <span class="badge-optional">optionnel</span></label>
+                            <input type="date" name="dateArriveDoc"
+                                   data-model="dateArriveDoc"
+                                   value="{{ dateArriveDoc }}">
+                        </div>
+                    </div>
+
+                    {# ── Description ── #}
+                    <div class="field-group">
+                        <label>Description <span class="badge-optional">optionnel</span></label>
+                        <textarea name="description"
+                                  data-model="description"
+                                  rows="3"
+                                  placeholder="Description ou notes...">{{ description }}</textarea>
+                    </div>
+
+                    {# ── Statut (chips) ── #}
+                    <div class="field-group">
+                        <label>Statut initial</label>
+                        <div class="status-chips">
+                            {# USER : Brouillon + Soumis #}
+                            {# SAP/CHEF : Brouillon + Archivé / Approuvé #}
+                            {% set allowedStatuts = ['Brouillon'] %}
+                            {% if is_granted('ROLE_USER') and not is_granted('ROLE_SAP') %}
+                                {% set allowedStatuts = ['Brouillon', 'Soumis'] %}
+                            {% elseif is_granted('ROLE_SAP') %}
+                                {% set allowedStatuts = ['Brouillon', 'Archivé'] %}
+                            {% elseif is_granted('ROLE_CHEF') %}
+                                {% set allowedStatuts = ['Brouillon', 'Approuvé'] %}
+                            {% elseif is_granted('ROLE_ADMIN') %}
+                                {% set allowedStatuts = ['Brouillon', 'Soumis', 'Approuvé', 'Archivé'] %}
+                            {% endif %}
+
+                            {% for s in allowedStatuts %}
+                                <label class="status-chip {{ statut == s ? 'active' : '' }}"
+                                       data-status="{{ s }}"
+                                       style="cursor:pointer;">
+                                    <input type="radio" name="statut" value="{{ s }}"
+                                           data-model="statut"
+                                           style="display:none;"
+                                           {{ statut == s ? 'checked' : '' }}>
+                                    {{ s }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+
+                {# ── Actions ── #}
+                <div class="doc-actions">
+                    <button type="submit" form="doc-main-form" class="btn-doc btn-doc-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ document ? 'Enregistrer les modifications' : 'Créer le document' }}
+                    </button>
+                    <a href="{{ path('document_index') }}" class="btn-doc btn-doc-secondary">
+                        Annuler
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </form>
+
+    {# ═══════════════════════════════════════════════════════════════════════
+       MODALE : Nouveau type de document
+    ═══════════════════════════════════════════════════════════════════════ #}
+    {% if showTypeDocModal %}
+    <div class="doc-modal-overlay">
+        <div class="doc-modal">
+            <div class="doc-modal-header">
+                <h3>➕ Nouveau type de document</h3>
+                <button type="button" class="btn-close-modal"
+                        data-action="live#action"
+                        data-live-action-param="closeTypeDocModal">×</button>
+            </div>
+
+            {% if typeDocError %}
+                <div class="modal-error">⚠ {{ typeDocError }}</div>
+            {% endif %}
+
+            <div class="field-group">
+                <label>Nom du type <span style="color:var(--doc-danger)">*</span></label>
+                <input type="text"
+                       data-model="newTypeDocName"
+                       placeholder="Ex: Contrat de travail"
+                       autofocus>
+            </div>
+
+            <div class="field-group">
+                <label>Dossier <span style="color:var(--doc-danger)">*</span></label>
+                <select data-model="newTypeDocDossierId">
+                    <option value="">— Choisir un dossier —</option>
+                    {% for d in dossiers %}
+                        <option value="{{ d.id }}"
+                            {% if newTypeDocDossierId == d.id %}selected{% endif %}>
+                            {{ d.nomDos }}
+                            ({{ d.niveauConf.value }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+                <button type="button"
+                        class="btn-doc btn-doc-primary"
+                        style="flex:1;"
+                        data-action="live#action"
+                        data-live-action-param="saveTypeDocument">
+                    Créer le type
+                </button>
+                <button type="button"
+                        class="btn-doc btn-doc-secondary"
+                        data-action="live#action"
+                        data-live-action-param="closeTypeDocModal">
+                    Annuler
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Stimulus Controller ──────────────────────────────────────────────── #}
+    <script>
+    (function() {
+        if (typeof window.Stimulus === 'undefined') return;
+
+        class DocFormController extends window.Stimulus.Controller {
+            static targets = ['fileInput','fileName','previewZone','previewContent','loading'];
+            static values  = { previewUrl: String, cleanupUrl: String };
+
+            connect() {
+                // Status chip toggle
+                this.element.querySelectorAll('.status-chip').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        this.element.querySelectorAll('.status-chip').forEach(c => c.classList.remove('active'));
+                        chip.classList.add('active');
+                    });
+                });
+            }
+
+            async onFileChange(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Nom du fichier
+                if (this.hasFileNameTarget) {
+                    this.fileNameTarget.textContent = file.name;
+                }
+
+                // Afficher spinner
+                this.showLoading(true);
+                this.previewZoneTarget.classList.add('has-file');
+
+                const fd = new FormData();
+                fd.append('file', file);
+
+                try {
+                    const resp = await fetch(this.previewUrlValue, {
+                        method: 'POST',
+                        body: fd,
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const data = await resp.json();
+
+                    if (data.preview) {
+                        this.renderPreview(data.preview, file.type);
+                    } else {
+                        this.showError(data.error || 'Aperçu indisponible');
+                    }
+                } catch(err) {
+                    this.showError('Erreur réseau');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            onTypeChange(e) {
+                // Déclenche la mise à jour du titre via live component
+                // (déjà géré par data-model="typeDocumentId")
+            }
+
+            renderPreview(src, type) {
+                const isImage = type && type.startsWith('image/');
+                let html;
+                if (isImage) {
+                    html = `<img src="${src}" alt="Aperçu" style="width:100%;height:100%;object-fit:contain;border-radius:8px;">`;
+                } else {
+                    html = `<iframe src="${src}#toolbar=0&navpanes=0" width="100%" style="min-height:340px;border-radius:8px;border:none;"></iframe>`;
+                }
+                this.previewContentTarget.innerHTML = html;
+            }
+
+            showLoading(show) {
+                if (this.hasLoadingTarget) {
+                    this.loadingTarget.classList.toggle('show', show);
+                }
+            }
+
+            showError(msg) {
+                this.previewContentTarget.innerHTML = `
+                    <div class="preview-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+                        <p style="color:var(--doc-danger)">${msg}</p>
+                    </div>`;
+            }
+        }
+
+        // Register if Stimulus app exists
+        const app = window.stimulusApp || (window.app);
+        if (app && app.register) {
+            app.register('doc-form', DocFormController);
+        }
+    })();
+    </script>
+</div>

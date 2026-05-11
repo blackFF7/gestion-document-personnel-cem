@@ -1,0 +1,308 @@
+{# templates/document/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Documents{% endblock %}
+
+{% block body %}
+<div class="doc-page container-fluid px-3 px-md-4 py-4 mt-5 pt-5">
+
+  {# ── Header ─────────────────────────────────────────────── #}
+  <div class="doc-header mt-4 pt-4">
+    <div>
+      <h1 class="doc-header__title">Espace Documents</h1>
+      <div class="doc-header__count">{{ pagination.getTotalItemCount() }} document(s) trouvé(s)</div>
+    </div>
+      <a href="{{ path('document_new') }}" class="btn-new">
+        <i class="bi bi-plus-lg"></i> Nouveau document
+      </a>
+  </div>
+
+  {# ── Filtres ────────────────────────────────────────────── #}
+  <div class="filter-card">
+    <form method="GET" action="{{ path('app_espace_index') }}">
+      <div class="row g-2">
+
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="form-label">Type de document</label>
+          <select name="typeDocument" class="form-select form-select-sm">
+            <option value="">— Tous —</option>
+            {% for type in typesDocument %}
+              <option value="{{ type.id }}" {{ filters.typeDocument == type.id ? 'selected' }}>
+                {{ type.nomTypeDoc }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="form-label">Dossier</label>
+          <select name="dossier" class="form-select form-select-sm">
+            <option value="">— Tous —</option>
+            {% for dossier in dossiers %}
+              <option value="{{ dossier.id }}" {{ filters.dossier == dossier.id ? 'selected' }}>
+                {{ dossier.nomDos }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="form-label">Statut</label>
+          <select name="statut" class="form-select form-select-sm">
+            <option value="">— Tous —</option>
+            {% for statut in statutsDisponibles %}
+              <option value="{{ statut.value }}" {{ filters.statut == statut.value ? 'selected' }}>
+                {{ statut.value }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="form-label">Date d'arrivée</label>
+          <input type="date" name="dateArrive" class="form-control form-control-sm"
+                 value="{{ filters.dateArrive }}">
+        </div>
+
+        {% if is_granted('ROLE_CHEF') or is_granted('ROLE_SAP') or is_granted('ROLE_ADMIN') or is_granted('ROLE_RH') %}
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="form-label">IM / Nom</label>
+          <input type="text" name="search" class="form-control form-control-sm"
+                 placeholder="Rechercher…" value="{{ filters.search }}">
+        </div>
+        {% endif %}
+
+        <div class="col-12 col-sm-6 col-lg-auto d-flex align-items-end gap-2">
+          <button type="submit" class="btn-filter primary">
+            <i class="bi bi-search"></i> Filtrer
+          </button>
+          <a href="{{ path('app_espace_index') }}" class="btn-filter">
+            <i class="bi bi-x-lg"></i> Reset
+          </a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  {# ── Flash messages ─────────────────────────────────────── #}
+  {% for type, messages in app.flashes %}
+    {% for message in messages %}
+      <div class="flash-{{ type == 'success' ? 'success' : (type == 'error' ? 'error' : 'warning') }}">
+        <i class="bi bi-{{ type == 'success' ? 'check-circle' : 'exclamation-triangle' }} me-2"></i>
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endfor %}
+
+  {# ════════════════════════════════════════════════════
+     TABLEAU — Desktop
+  ════════════════════════════════════════════════════ #}
+  <div class="doc-table-wrap">
+    {% if pagination|length > 0 %}
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th>Référence</th>
+          <th>Titre / Type</th>
+          {% if is_granted('ROLE_CHEF') or is_granted('ROLE_SAP') or is_granted('ROLE_ADMIN') or is_granted('ROLE_RH') %}
+          <th>Personnel</th>
+          {% endif %}
+          <th>Dossier</th>
+          <th>Date arrivée</th>
+          <th>Statut</th>
+          <th>Créé le</th>
+          <th style="text-align:center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for document in pagination %}
+        {% set statut = document.statucDoc.value %}
+        {% set conf   = document.typeDocumentID.dossierID.niveauConf.value %}
+        <tr>
+          <td>
+            <span class="ref-code" title="{{ document.reference }}">
+              {{ document.reference }}
+            </span>
+          </td>
+          <td>
+            <div class="doc-title-main">{{ document.titre ?? '—' }}</div>
+            <div class="doc-subtitle">{{ document.typeDocumentID.nomTypeDoc }}</div>
+          </td>
+          {% if is_granted('ROLE_CHEF') or is_granted('ROLE_SAP') or is_granted('ROLE_ADMIN') or is_granted('ROLE_RH') %}
+          <td>
+            <div class="personnel-name">{{ document.personnelID.fullName }}</div>
+            <div class="personnel-im">IM {{ document.personnelID.IMFormatted }}</div>
+          </td>
+          {% endif %}
+          <td>
+            <span class="dossier-name">{{ document.typeDocumentID.dossierID.nomDos }}</span><br>
+            {% if conf == 'Strictement confidentiel' %}
+              <span class="conf-badge conf-Strictement">🔒 Str. conf.</span>
+            {% elseif conf == 'Confidentiel' %}
+              <span class="conf-badge conf-Confidentiel">🔐 Conf.</span>
+            {% else %}
+              <span class="conf-badge conf-Public">🌐 Public</span>
+            {% endif %}
+          </td>
+          <td class="date-cell">
+            {{ document.dateArriveDoc ? document.dateArriveDoc|date('d/m/Y') : '—' }}
+          </td>
+          <td>
+            <span class="status-badge status-{{ statut }}">{{ statut }}</span>
+          </td>
+          <td class="date-cell">{{ document.creationDoc|date('d/m/Y') }}</td>
+          <td>
+            <div class="action-group">
+              <a href="{{ path('app_espace_show', {'id': document.id}) }}" class="btn-action view">
+                {{ ux_icon('mdi:eye-outline') }}
+              </a>
+              {% if is_granted('EDIT', document) %}
+              <a href="{{ path('document_edit', {'id': document.id}) }}" class="btn-action edit">
+                {{ ux_icon('mdi:pencil') }}
+              </a>
+              {% endif %}
+              {% if document.statucDoc.value == 'Archivé' %}
+              <a href="{{ path('app_espace_download', {'id': document.id}) }}" class="btn-action dl">
+                {{ ux_icon('bi:download') }}
+              </a>
+              {% endif %}
+              {% if is_granted('DOCUMENT_DELETE', document) %}
+              <button type="button" class="btn-action del"
+                      data-bs-toggle="modal" data-bs-target="#delModal{{ document.id }}">
+                
+              </button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-folder-x"></i>
+      Aucun document trouvé
+    </div>
+    {% endif %}
+  </div>
+
+  {# ════════════════════════════════════════════════════
+     CARDS — Mobile
+  ════════════════════════════════════════════════════ #}
+  <div class="doc-cards">
+    {% if pagination|length > 0 %}
+      {% for document in pagination %}
+      {% set statut = document.statucDoc.value %}
+      {% set conf   = document.typeDocumentID.dossierID.niveauConf.value %}
+      {% set statusMap = {'Brouillon':'br','Soumis':'so','Approuvé':'ap','Rejeté':'re','Archivé':'ar'} %}
+      <div class="doc-card status-{{ statusMap[statut] ?? 'br' }}">
+
+        <div class="doc-card__header">
+          <span class="doc-card__ref" title="{{ document.reference }}">{{ document.reference }}</span>
+          <span class="status-badge status-{{ statut }}">{{ statut }}</span>
+        </div>
+
+        <div class="doc-card__title">{{ document.titre ?? document.typeDocumentID.nomTypeDoc }}</div>
+        <div class="doc-card__type">{{ document.typeDocumentID.nomTypeDoc }}</div>
+
+        <div class="doc-card__meta">
+          <span class="dossier-name">{{ document.typeDocumentID.dossierID.nomDos }}</span>
+
+          {% if conf == 'Strictement confidentiel' %}
+            <span class="conf-badge conf-Strictement">🔒</span>
+          {% elseif conf == 'Confidentiel' %}
+            <span class="conf-badge conf-Confidentiel">🔐</span>
+          {% else %}
+            <span class="conf-badge conf-Public">🌐 Public</span>
+          {% endif %}
+
+          {% if is_granted('ROLE_CHEF') or is_granted('ROLE_SAP') or is_granted('ROLE_ADMIN') or is_granted('ROLE_RH') %}
+          <span class="doc-card__personnel">
+            {{ document.personnelID.fullName }} · IM {{ document.personnelID.IMFormatted }}
+          </span>
+          {% endif %}
+
+          {% if document.dateArriveDoc %}
+          <span class="doc-card__date">
+            <i class="bi bi-calendar3 me-1"></i>{{ document.dateArriveDoc|date('d/m/Y') }}
+          </span>
+          {% endif %}
+        </div>
+
+        <div class="doc-card__actions">
+          <a href="{{ path('app_espace_show', {'id': document.id}) }}" class="btn-action view">
+            <i class="bi bi-eye"></i> Voir
+          </a>
+          {% if is_granted('EDIT', document) %}
+          <a href="{{ path('document_edit', {'id': document.id}) }}" class="btn-action edit">
+            <i class="bi bi-pencil"></i> Modifier
+          </a>
+          {% endif %}
+          {% if document.statucDoc.value == 'Archivé' %}
+          <a href="{{ path('app_espace_download', {'id': document.id}) }}" class="btn-action dl">
+            <i class="bi bi-download"></i>
+          </a>
+          {% endif %}
+          {% if is_granted('DOCUMENT_DELETE', document) %}
+          <button type="button" class="btn-action del"
+                  data-bs-toggle="modal" data-bs-target="#delModal{{ document.id }}">
+            {{ ux_icon('mdi:trash') }}
+          </button>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <i class="bi bi-folder-x"></i>
+        Aucun document trouvé
+      </div>
+    {% endif %}
+  </div>
+
+  {# ── Pagination ─────────────────────────────────────────── #}
+  <div class="pagination-wrap">
+    {{ knp_pagination_render(pagination) }}
+  </div>
+
+</div>{# .doc-page #}
+
+{# ════════════════════════════════════════════════════
+   Modaux suppression
+════════════════════════════════════════════════════ #}
+{% for document in pagination %}
+  {% if is_granted('DOCUMENT_DELETE', document) %}
+  <div class="modal fade modal-doc" id="delModal{{ document.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmer la suppression
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          Voulez-vous supprimer le document<br>
+          <strong style="color:var(--accent); font-family:sans-serif">{{ document.reference }}</strong> ?
+          <br><br>
+          <span style="color:var(--danger); font-size:.8rem">
+            <i class="bi bi-exclamation-circle me-1"></i>Cette action est irréversible.
+          </span>
+        </div>
+        <div class="modal-footer gap-2">
+          <button type="button" class="btn-cancel" data-bs-dismiss="modal">Annuler</button>
+          <form action="{{ path('app_espace_delete', {'id': document.id}) }}" method="POST" style="margin:0">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ document.id) }}">
+            <button type="submit" class="btn-confirm-del">
+              <i class="bi bi-trash me-1"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+{% endblock %}

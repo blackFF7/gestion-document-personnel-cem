@@ -1,0 +1,245 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion | DigitDoc{% endblock %}
+
+{% block body %}
+<body class="login-page">
+
+  <div class="bg-geo"></div>
+  <div class="bg-dots"></div>
+  <div class="shape shape-1" aria-hidden="true"></div>
+  <div class="shape shape-2" aria-hidden="true"></div>
+  <div class="shape shape-3" aria-hidden="true"></div>
+  <div class="shape shape-4" aria-hidden="true"></div>
+
+  <main class="login-wrapper">
+    <div class="login-card">
+
+      {# ── FORM SIDE ── #}
+      <section class="login-form-side">
+
+        <div class="login-logo-mobile">
+          <img src="{{ asset('icons/logo3.png') }}" alt="DigitDoc" style="max-width:100px;">
+        </div>
+
+        <h1 class="form-title d-flex justify-content-center">Connexion</h1>
+
+        {% if error %}
+        <div class="alert-dd" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate autocomplete="off"
+              data-controller="login-form">
+
+          {# ── Champ Identifiant (flottant) ── #}
+          <div class="ff-group">
+            <div class="form-floating {% if last_username %}is-filled{% endif %}"
+                 data-controller="floating-field">
+
+              <input type="text"
+                     name="_username"
+                     id="user"
+                     value="{{ last_username }}"
+                     required
+                     autocomplete="username"
+                     class="form-control"
+                     data-floating-field-target="input"
+                     data-login-form-target="username"
+                     placeholder="Identifiant">
+
+              <label for="user">Identifiant</label>
+            </div>
+          </div>
+
+          {# ── Champ Mot de passe (flottant) ── #}
+          <div class="ff-group">
+            <div class="form-floating"
+                 data-controller="floating-field password">
+
+              <input type="password"
+                     name="_password"
+                     id="password"
+                     required
+                     autocomplete="current-password"
+                     class="form-control"
+                     data-floating-field-target="input"
+                     data-password-target="input"
+                     placeholder="Mot de passe">
+
+              <label for="password">Mot de passe</label>
+
+              <button type="button"
+                      class="ff-btn-toggle"
+                      aria-label="Afficher / masquer le mot de passe"
+                      data-action="click->password#toggle">
+                <span data-password-target="eyeIcon">
+                  {{ ux_icon('iconamoon:eye-off-duotone')|raw }}
+                </span>
+                <span data-password-target="eyeSlashIcon" class="d-none">
+                  {{ ux_icon('mdi:eye-outline')|raw }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+          <button class="btn-submit" type="submit"
+                  data-login-form-target="submitBtn">
+            Se connecter
+          </button>
+
+        </form>
+      </section>
+
+      {# ── BRAND SIDE ── #}
+      <aside class="login-brand-side" aria-hidden="true">
+        <div class="brand-accent"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-logo-wrap">
+          <img src="{{ asset('icons/logo3.png') }}" alt="DigitDoc">
+        </div>
+        <h2 class="brand-title"><span class="text-light">Digit</span><span class="text-warning">Doc</span></h2>
+        <div class="brand-divider"></div>
+        <p class="brand-tagline">Le partenaire de votre document</p>
+      </aside>
+
+    </div>
+  </main>
+
+</body>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  Stimulus Controller : floating-field
+//  Gère l'état is-focused / is-filled du wrapper
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  if (typeof Stimulus === 'undefined' && typeof window.Stimulus === 'undefined') {
+    // Fallback vanilla si Stimulus n'est pas encore chargé
+    document.querySelectorAll('[data-controller~="floating-field"]').forEach(function (wrap) {
+      var field = wrap.querySelector('input, select, textarea');
+      if (!field) return;
+
+      function syncFilled() {
+        wrap.classList.toggle('is-filled', field.value.trim() !== '');
+      }
+      syncFilled();
+
+      field.addEventListener('focus',  function () { wrap.classList.add('is-focused'); });
+      field.addEventListener('blur',   function () { wrap.classList.remove('is-focused'); syncFilled(); });
+      field.addEventListener('input',  syncFilled);
+      field.addEventListener('change', syncFilled);
+    });
+    return;
+  }
+
+  // ── Enregistrement Stimulus ─────────────────────────────────
+  const application = window.Stimulus || (window.StimulusApplication && window.StimulusApplication.start());
+
+  class FloatingFieldController extends (window.StimulusController || class {}) {
+    static targets = ['input'];
+
+    connect() {
+      this._field = this.hasInputTarget
+        ? this.inputTarget
+        : (this.element.querySelector('input:not([type="hidden"])') ||
+           this.element.querySelector('select') ||
+           this.element.querySelector('textarea'));
+
+      if (!this._field) return;
+
+      this._syncFilled();
+
+      this._field.addEventListener('focus',  this._onFocus);
+      this._field.addEventListener('blur',   this._onBlur);
+      this._field.addEventListener('input',  this._syncFilled);
+      this._field.addEventListener('change', this._syncFilled);
+    }
+
+    disconnect() {
+      if (!this._field) return;
+      this._field.removeEventListener('focus',  this._onFocus);
+      this._field.removeEventListener('blur',   this._onBlur);
+      this._field.removeEventListener('input',  this._syncFilled);
+      this._field.removeEventListener('change', this._syncFilled);
+    }
+
+    _onFocus  = () => this.element.classList.add('is-focused');
+    _onBlur   = () => { this.element.classList.remove('is-focused'); this._syncFilled(); };
+    _syncFilled = () => {
+      const v = this._field.value;
+      this.element.classList.toggle('is-filled', v !== null && String(v).trim() !== '');
+    };
+  }
+
+  // login-form : submit feedback
+  class LoginFormController extends (window.StimulusController || class {}) {
+    static targets = ['submitBtn', 'username'];
+
+    connect() {
+      // autofocus sur le premier champ vide
+      if (this.hasUsernameTarget && !this.usernameTarget.value) {
+        this.usernameTarget.focus();
+      }
+
+      this.element.addEventListener('submit', () => {
+        if (this.hasSubmitBtnTarget) {
+          this.submitBtnTarget.textContent = 'Connexion…';
+          this.submitBtnTarget.disabled = true;
+        }
+      });
+    }
+  }
+
+  try {
+    if (application && application.register) {
+      application.register('floating-field', FloatingFieldController);
+      application.register('login-form',     LoginFormController);
+    }
+  } catch (_) {}
+})();
+
+// ── Fallback garanti si Stimulus non disponible au moment du script ──
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('[data-controller~="floating-field"]').forEach(function (wrap) {
+    if (wrap._ffInit) return; // déjà initialisé par Stimulus
+    wrap._ffInit = true;
+
+    var field = wrap.querySelector('input:not([type="hidden"])') ||
+                wrap.querySelector('select') ||
+                wrap.querySelector('textarea');
+    if (!field) return;
+
+    function syncFilled() {
+      wrap.classList.toggle('is-filled', field.value.trim() !== '');
+    }
+    syncFilled();
+
+    field.addEventListener('focus',  function () { wrap.classList.add('is-focused'); });
+    field.addEventListener('blur',   function () { wrap.classList.remove('is-focused'); syncFilled(); });
+    field.addEventListener('input',  syncFilled);
+    field.addEventListener('change', syncFilled);
+  });
+
+  // submit feedback
+  var form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function () {
+      var btn = form.querySelector('[data-login-form-target="submitBtn"]');
+      if (btn) { btn.textContent = 'Connexion…'; btn.disabled = true; }
+    });
+  }
+});
+</script>
+{% endblock %}

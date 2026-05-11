@@ -1,0 +1,118 @@
+# config/services.yaml
+parameters:
+    # Restriction dossier
+    access_confidential_levels:
+        ROLE_USER:   ['Public', 'Confidentiel', 'Strictement confidentiel']
+        ROLE_CHEF:   ['Public']
+        ROLE_RH:     ['Public', 'Confidentiel']
+        ROLE_SAP:    ['Public', 'Confidentiel', 'Strictement confidentiel']
+        ROLE_ADMIN:  ['Public', 'Confidentiel', 'Strictement confidentiel']
+
+    access_status_levels:
+        ROLE_USER:   ['Brouillon', 'Soumis', 'Approuvé', 'Rejeté', 'Archivé']
+        ROLE_CHEF:   ['Soumis', 'Archivé']
+        ROLE_RH:     ['Archivé']
+        ROLE_SAP:    ['Soumis', 'Approuvé', 'Rejeté', 'Archivé']
+        ROLE_ADMIN:  ['Brouillon', 'Soumis', 'Approuvé', 'Rejeté', 'Archivé']
+
+    documents_directory: '%kernel.project_dir%/public/uploads/documents'
+    previews_directory:  '%kernel.project_dir%/public/uploads/previews'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+            - '../src/Tests/'
+
+    # ── Client S3 / MinIO ────────────────────────────────────────────────────
+    documents_s3_client:
+        class: Aws\S3\S3Client
+        public: true
+        tags:
+            - { name: 'flysystem.adapter_factory', alias: 'aws' }
+        arguments:
+            -   version: 'latest'
+                region: "%env(MINIO_REGION)%"
+                endpoint: "%env(MINIO_ENDPOINT)%"
+                use_path_style_endpoint: true
+                credentials:
+                    key: "%env(MINIO_ACCESS_KEY)%"
+                    secret: "%env(MINIO_SECRET_KEY)%"
+
+    # ── Services applicatifs ─────────────────────────────────────────────────
+    App\Service\MinioService:
+        arguments:
+            $s3Client:          '@documents_s3_client'
+            $bucketDocuments:   "%env(MINIO_BUCKET_DOCUMENTS)%"
+            $bucketPreviews:    "%env(MINIO_BUCKET_PREVIEWS)%"
+            $bucketPhotos:      "%env(MINIO_BUCKET_PHOTOS)%"
+            $publicEndpoint:    "%env(MINIO_PUBLIC_ENDPOINT)%"
+
+    App\Service\DashboardStatsService:
+        arguments:
+            $cacheDashboard: '@cache.dashboard'
+
+    App\Service\DocumentPreviewer:
+        arguments:
+            $previewDir:        '%kernel.project_dir%/public/uploads/previews'
+            $documentsStorage:  '@documents.storage'
+
+    App\Service\PreviewGenerator:
+        arguments:
+            $previews_directory: '%previews_directory%'
+
+    # ── Voter ────────────────────────────────────────────────────────────────
+    App\Security\Voter\DocumentVoter:
+        arguments:
+            $em: '@doctrine.orm.entity_manager'
+            $confidentialLevels: '%access_confidential_levels%'
+            $statusLevels: '%access_status_levels%'
+        tags: ['security.voter']
+
+    # ── Namers VichUploader ──────────────────────────────────────────────────
+
+    # Namer fichier document : référence sluggifiée (+ _v<n> si collision)
+    App\Namer\DocumentNamer:
+        public: true
+        tags:
+            - { name: 'vich_uploader.namer', alias: 'App\Namer\DocumentNamer' }
+
+    # Directory document : <IM>/<nomenclatureDossier>/<Annee>/
+    App\Namer\DocumentDirectoryNamer:
+        public: true
+        tags:
+            - { name: 'vich_uploader.directory_namer', alias: 'App\Namer\DocumentDirectoryNamer' }
+
+    # Namer photo de profil : <IM>_<YmdHis>.<ext>
+    App\Namer\PhotoProfilNamer:
+        public: true
+        tags:
+            - { name: 'vich_uploader.namer', alias: 'App\Namer\PhotoProfilNamer' }
+
+    # Directory photo : <IM>/
+    App\Namer\PhotoProfilDirectoryNamer:
+        public: true
+        tags:
+            - { name: 'vich_uploader.directory_namer', alias: 'App\Namer\PhotoProfilDirectoryNamer' }
+
+    # ── Fixtures ─────────────────────────────────────────────────────────────
+    App\DataFixtures\ParametreFixtures:
+        arguments:
+            $photosProfilStorage: '@photos_profil.storage'
+
+    # ── Namer legacy (si encore référencé ailleurs) ──────────────────────────
+    # App\Namer\DocumentDirectoryNamer:
+    #     public: true
+    #     tags: ['vich_uploader.directory_namer']
+
+    Vich\UploaderBundle\Naming\SlugNamer:
+        arguments:
+            $service: '@App\Repository\DocumentRepository'
+            $method: findByPersonnel

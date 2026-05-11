@@ -1,0 +1,20 @@
+<div {{ attributes }}>
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Nom de l'agence *</label>
+        <input type="text" data-model="nomAgc"
+               class="form-control {{ _errors.has('nomAgc') ? 'is-invalid' : '' }}"
+               placeholder="ex: CEM 001 Tsaralalana">
+        {% if _errors.has('nomAgc') %}
+            <div class="invalid-feedback">{{ _errors.get('nomAgc') }}</div>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Nomenclature</label>
+        <input type="text" data-model="nomenAgc" class="form-control"
+               placeholder="ex: CEM001 (auto si vide)">
+    </div>
+    <button class="btn btn-primary w-100"
+            data-action="live#action" data-live-action-param="save">
+        <i class="bi bi-check-circle me-1"></i>Enregistrer l'agence
+    </button>
+</div>

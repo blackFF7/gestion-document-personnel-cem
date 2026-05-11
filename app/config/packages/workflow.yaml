@@ -1,0 +1,80 @@
+framework:
+    workflows:
+
+        document_workflow:
+            type: 'state_machine'
+
+            supports:
+                - App\Entity\Document
+
+            marking_store:
+                type: method
+                property: statucDoc   # ⚠️ correspond à ton champ DB (statuc_doc)
+
+            initial_marking: Brouillon
+
+            places:
+                - Brouillon
+                - Soumis
+                - Approuvé
+                - Rejeté
+                - Archivé
+
+            transitions:
+
+                # =========================
+                # 🔰 USER FLOW
+                # =========================
+
+                soumettre:
+                    from: Brouillon
+                    to: Soumis
+
+                approuver_par_chef:
+                    from: Soumis
+                    to: Approuvé
+
+                rejeter_par_chef:
+                    from: Soumis
+                    to: Rejeté
+
+                modifier_par_chef:
+                    from: Soumis
+                    to: Brouillon
+
+                # =========================
+                # 🔰 SAP FLOW
+                # =========================
+
+                archiver:
+                    from: Approuvé
+                    to: Archivé
+
+                modifier_par_sap:
+                    from: Approuvé
+                    to: Brouillon
+
+                rejeter_par_sap:
+                    from: Approuvé
+                    to: Rejeté
+
+                # =========================
+                # 🔰 DIRECT ACTIONS (roles avancés)
+                # =========================
+
+                archiver_direct:
+                    from: Brouillon
+                    to: Archivé
+
+                approuver_direct:
+                    from: Brouillon
+                    to: Approuvé
+
+                # =========================
+                # 🔰 GLOBAL RULES
+                # =========================
+
+                remettre_en_brouillon:
+                    from:
+                        - Rejeté
+                    to: Brouillon

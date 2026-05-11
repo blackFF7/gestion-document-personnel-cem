@@ -1,0 +1,15 @@
+@import 'login.css';
+@import 'nav.css';
+@import 'scroll.css';
+@import 'personnel-form.css';
+@import 'breadcrumb.css';
+@import 'toast.css';
+@import 'document_form.css';
+@import 'document.css';
+@import 'documentIndex.css';
+@import 'btn.css';
+@import 'agent.css';
+
+body {
+    background-color: skyblue;
+}

@@ -1,0 +1,228 @@
+{# templates/document/new.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau document{% endblock %}
+
+{% block body %}
+<div class="container-fluid px-4 py-3 mt-5 pt-5">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_espace_index') }}">Documents</a></li>
+            <li class="breadcrumb-item active">Nouveau</li>
+        </ol>
+    </nav>
+
+    <h1 class="h3 fw-bold mb-4">Nouveau document</h1>
+
+    <div class="row g-4">
+
+        {# ── Formulaire ─────────────────────────────────────────────────────── #}
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">📋 Informations du document</div>
+                <div class="card-body">
+                    {{ form_start(form, {'attr': {'id': 'documentForm', 'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
+
+                    <div class="mb-3">
+                        {{ form_label(form.personnelID) }}
+                        {{ form_widget(form.personnelID) }}
+                        {{ form_errors(form.personnelID) }}
+                    </div>
+
+                    <div class="mb-3 d-flex align-items-end gap-2">
+                        <div class="flex-grow-1">
+                            {{ form_label(form.typeDocumentID) }}
+                            {{ form_widget(form.typeDocumentID) }}
+                            {{ form_errors(form.typeDocumentID) }}
+                        </div>
+                        {# Bouton ajout rapide type document via Live Component modal #}
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-0"
+                                data-bs-toggle="modal" data-bs-target="#addTypeDocModal"
+                                title="Ajouter un type de document">
+                            <i class="bi bi-plus-circle"></i>
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.titre) }}
+                        {{ form_widget(form.titre) }}
+                        {{ form_errors(form.titre) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.titulaire) }}
+                        {{ form_widget(form.titulaire) }}
+                        {{ form_errors(form.titulaire) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.dateArriveDoc) }}
+                        {{ form_widget(form.dateArriveDoc) }}
+                        {{ form_errors(form.dateArriveDoc) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.description) }}
+                        {{ form_widget(form.description) }}
+                        {{ form_errors(form.description) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.fichierUpload) }}
+                        {{ form_widget(form.fichierUpload, {'id': 'fileInput'}) }}
+                        {{ form_errors(form.fichierUpload) }}
+                        <div class="form-text">PDF, DOCX, XLSX, Images — Max 50 Mo</div>
+                    </div>
+
+                    {% if form.statucDoc is defined %}
+                    <div class="mb-3">
+                        {{ form_label(form.statucDoc) }}
+                        {{ form_widget(form.statucDoc) }}
+                        {{ form_errors(form.statucDoc) }}
+                    </div>
+                    {% endif %}
+
+                    {# Référence auto (lecture seule, pour information) #}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Référence générée automatiquement</label>
+                        <input type="text" class="form-control bg-light text-muted"
+                               id="referencePreview" readonly
+                               placeholder="IM_DOSSIER_TITULAIRE_TYPE_du_DATE">
+                        <div class="form-text">La référence est calculée à partir des champs remplis.</div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i>Enregistrer
+                        </button>
+                        <a href="{{ path('app_espace_index') }}" class="btn btn-outline-secondary">
+                            Annuler
+                        </a>
+                    </div>
+
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+
+        {# ── Prévisualisation côté droit ─────────────────────────────────────── #}
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-bold">👁️ Aperçu du fichier sélectionné</div>
+                <div class="card-body d-flex align-items-center justify-content-center"
+                     id="previewContainer" style="min-height: 500px;">
+                    <div class="text-center text-muted" id="previewPlaceholder">
+                        <i class="bi bi-file-earmark-arrow-up fs-1 mb-3 d-block"></i>
+                        <p>Sélectionnez un fichier pour le prévisualiser ici.</p>
+                    </div>
+                    <iframe id="previewIframe" src="" width="100%" height="600"
+                            style="display:none; border:none;"></iframe>
+                    <img id="previewImage" src="" alt="Aperçu"
+                         class="img-fluid rounded"
+                         style="display:none; max-height:600px; object-fit:contain;">
+                    <div id="previewUnsupported" style="display:none;" class="text-center text-muted">
+                        <i class="bi bi-file-earmark-check fs-1 mb-2 d-block text-success"></i>
+                        <p>Fichier sélectionné. La prévisualisation n'est pas disponible pour ce format.</p>
+                        <small id="previewFilename"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{# ── Modal : Ajout rapide Type Document (Live Component) ───────────────────── #}
+<div class="modal fade" id="addTypeDocModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un type de document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <twig:NewTypeDocumentForm />
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ── Prévisualisation du fichier sélectionné ─────────────────────────────
+    const fileInput = document.getElementById('fileInput');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+    const previewIframe = document.getElementById('previewIframe');
+    const previewImage = document.getElementById('previewImage');
+    const previewUnsupported = document.getElementById('previewUnsupported');
+    const previewFilename = document.getElementById('previewFilename');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const url = URL.createObjectURL(file);
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            // Cacher tout
+            previewPlaceholder.style.display = 'none';
+            previewIframe.style.display = 'none';
+            previewImage.style.display = 'none';
+            previewUnsupported.style.display = 'none';
+
+            if (ext === 'pdf') {
+                previewIframe.src = url;
+                previewIframe.style.display = 'block';
+            } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                previewImage.src = url;
+                previewImage.style.display = 'block';
+            } else {
+                previewFilename.textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + ' Mo)';
+                previewUnsupported.style.display = 'block';
+            }
+        });
+    }
+
+    // ── Génération de la référence en temps réel ────────────────────────────
+    function updateReference() {
+        const im = '{{ app.user.IMFormatted }}';
+        const typeSelect = document.querySelector('[name$="[typeDocumentID]"]');
+        const titulaireInput = document.querySelector('[name$="[titulaire]"]');
+        const dateInput = document.querySelector('[name$="[dateArriveDoc]"]');
+        const refPreview = document.getElementById('referencePreview');
+
+        if (!refPreview) return;
+
+        let ref = im || 'XXX';
+
+        if (typeSelect && typeSelect.selectedOptions[0] && typeSelect.selectedOptions[0].text) {
+            const typeText = typeSelect.selectedOptions[0].text;
+            const match = typeText.match(/\(([^)]+)\)/);
+            ref += '_' + (match ? match[1].substring(0, 6).toUpperCase() : 'DOS');
+            ref += '_' + typeText.split(' (')[0].substring(0, 6).replace(/\s/g, '').toUpperCase();
+        }
+
+        if (titulaireInput && titulaireInput.value.trim()) {
+            ref += '_' + titulaireInput.value.trim().substring(0, 8).replace(/\s/g, '').toUpperCase();
+        }
+
+        if (dateInput && dateInput.value) {
+            const d = new Date(dateInput.value);
+            ref += '_du_' + ('0'+d.getDate()).slice(-2) + ('0'+(d.getMonth()+1)).slice(-2) + d.getFullYear();
+        }
+
+        refPreview.value = ref;
+    }
+
+    ['change', 'input'].forEach(ev => {
+        document.querySelectorAll('[name$="[typeDocumentID]"], [name$="[titulaire]"], [name$="[dateArriveDoc]"]')
+            .forEach(el => el.addEventListener(ev, updateReference));
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

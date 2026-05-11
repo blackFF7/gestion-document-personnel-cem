@@ -1,0 +1,188 @@
+{# templates/personnel/show.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ personnel.fullName }}{% endblock %}
+
+{# ═══════════════════════════════════════════════════════════════════════════
+   PAGE DE DÉTAIL D'UN PERSONNEL
+
+   Affiche les informations détaillées d'un personnel, avec des sections pour :
+   - Identité
+   - Contacts
+   - Famille
+   - Documents
+
+   Inclut une barre d'actions pour éditer, activer/désactiver ou supprimer le personnel.
+
+   Le design est épuré et responsive, avec une mise en avant de la photo de profil
+   et des badges de statut/roles.
+   ═══════════════════════════════════════════════════════════════════════════ #}
+
+{% block body %}
+<div class="container pt-5 mt-5">
+    <nav aria-label="breadcrumb" class="mb-3 mt-4 pt-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_personnel_index') }}">Personnel</a></li>
+            <li class="breadcrumb-item active">{{ personnel.fullName }}</li>
+        </ol>
+    </nav>
+
+    <div class="profile-card">
+
+        {# ── Header ─────────────────────────────────────────────────────── #}
+        <div class="profile-header">
+            {% if personnel.photoProfil %}
+                <img src="{{ asset('uploads/photos_profil/' ~ personnel.photoProfil) }}"
+                    alt="{{ personnel.fullName }}" class="profile-avatar">
+            {% else %}
+                <div class="profile-avatar-placeholder">
+                    {{ personnel.nomAg|first|upper }}{{ personnel.prenomAg|first|upper }}
+                </div>
+            {% endif %}
+            <div>
+                <p class="profile-name">{{ personnel.fullName }}</p>
+                <p class="profile-sub">IM: <strong>{{ personnel.IMFormatted }}</strong> · {{ personnel.username }}</p>
+                {% if personnel.fonctionID %}
+                    <p class="profile-sub">{{ personnel.fonctionID.nomFon }}
+                        {% if personnel.fonctionID.categorieID %} · <em>{{ personnel.fonctionID.categorieID.designation }}</em>{% endif %}
+                    </p>
+                {% endif %}
+                {% set sv = personnel.statusCompte.value %}
+                <span class="badge-status badge-{{ sv|lower }}">
+                    {{ sv == 'Actif' ? '🟢' : (sv == 'Inactif' ? '⚫' : (sv == 'Suspendu' ? '🟡' : '🔴')) }} {{ sv }}
+                </span>
+                {% for role in personnel.roles %}
+                    <span class="badge bg-light text-dark border ms-1 small">{{ role|replace({'ROLE_': ''}) }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# ── Identité ───────────────────────────────────────────────────── #}
+        <div class="info-section">
+            <div class="info-section-title">👤 Identité</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Nom</label><span>{{ personnel.nomAg }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Prénom</label><span>{{ personnel.prenomAg }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Sexe</label><span>{{ personnel.sexe ? personnel.sexe.value : '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Date de naissance</label>
+                    <span>{{ personnel.dateNaissAg ? personnel.dateNaissAg|date('d/m/Y') : '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Date d'entrée</label>
+                    <span>{{ personnel.dateEntre ? personnel.dateEntre|date('d/m/Y') : '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Situation familiale</label>
+                    <span>{{ personnel.situationFamilial ? personnel.situationFamilial.value : '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Adresse</label><span>{{ personnel.adresseAg ?? '—' }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Email</label>
+                    <span>{{ personnel.mailAg ?  personnel.mailAg ~ ''|raw : '—' }}</span>
+                </div>
+            </div>
+        </div>
+
+        {# ── Contacts ───────────────────────────────────────────────────── #}
+        {% if personnel.contactAg is iterable %}
+            <div class="info-section">
+                <div class="info-section-title">📞 Contacts</div>
+
+                {% for contact in personnel.contactAg %}
+
+                    {% if contact is iterable %}
+                        <span class="contact-chip">
+                            {{ contact.type == 'mobile'
+                                ? '📱'
+                                : (contact.type == 'whatsapp'
+                                    ? '💬'
+                                    : '☎️') }}
+
+                            <strong>{{ contact.type|capitalize }}</strong>
+                            : {{ contact.valeur }}
+                        </span>
+
+                    {% else %}
+                        <span class="contact-chip">
+                            ☎️ <strong>Téléphone</strong> : {{ contact }}
+                        </span>
+                    {% endif %}
+
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {# ── Famille ────────────────────────────────────────────────────── #}
+        {% if personnel.conjoint or personnel.enfants|length > 0 %}
+            <div class="info-section">
+                <div class="info-section-title">👨‍👩‍👧 Famille</div>
+
+                {% if personnel.conjoint %}
+                    <div class="famille-card">
+                        <strong>💍 Conjoint(e) :</strong>
+                        {{ personnel.conjoint.nom }} {{ personnel.conjoint.prenom }}
+                        {% if personnel.conjoint.dateNaiss %}
+                            · Né(e) le {{ personnel.conjoint.dateNaiss|date('d/m/Y') }}
+                        {% endif %}
+                        {% if personnel.conjoint.profession %}
+                            · {{ personnel.conjoint.profession }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {% if personnel.enfants|length > 0 %}
+                    <div class="mt-2">
+                        <strong>Enfants ({{ personnel.enfants|length }}) :</strong>
+                        {% for enfant in personnel.enfants %}
+                            <div class="famille-card mt-2">
+                                {{ loop.index }}. {{ enfant.nom }} {{ enfant.prenom }}
+                                {% if enfant.sexe %} · {{ enfant.sexe.value }}{% endif %}
+                                {% if enfant.dateNaiss %} · Né(e) le {{ enfant.dateNaiss|date('d/m/Y') }}{% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# ── Documents ──────────────────────────────────────────────────── #}
+        {% if personnel.documents|length > 0 %}
+            <div class="info-section">
+                <div class="info-section-title">📄 Documents ({{ personnel.documents|length }})</div>
+                {% for doc in personnel.documents %}
+                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                        <span>{{ doc.reference }}</span>
+                        <span class="badge bg-secondary">{{ doc.statucDoc.value }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {# ── Actions ────────────────────────────────────────────────────── #}
+        <div class="actions-bar">
+            <a href="{{ path('app_personnel_index') }}" class="btn btn-outline-secondary">← Retour</a>
+            <a href="{{ path('app_personnel_edit', {id: personnel.id}) }}" class="btn btn-primary">✏️ Modifier</a>
+            <form method="post" action="{{ path('app_personnel_toggle_status', {id: personnel.id}) }}" class="d-inline">
+                <button type="submit" class="btn btn-outline-warning">
+                    {{ personnel.statusCompte.value == 'Actif' ? '⏸ Désactiver' : '▶ Activer' }}
+                </button>
+            </form>
+            <form method="post" action="{{ path('app_personnel_delete', {id: personnel.id}) }}"
+                onsubmit="return confirm('Supprimer définitivement {{ personnel.fullName }} ?')" class="ms-auto">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_' ~ personnel.id) }}">
+                <button type="submit" class="btn btn-danger">🗑 Supprimer</button>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+# Symfony
+/.env.local
+/.env.*.local
+/var/
+/vendor/
+
+# Node.js
+/node_modules/
+
+# Docker overrides
+docker-compose.override.yml
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Uploads (optionnel)
+public/uploads/
+
+# OS
+.DS_Store
+Thumbs.db

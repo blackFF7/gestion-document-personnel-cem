@@ -1,0 +1,3 @@
+# config/packages/ux_native.yaml
+ux_native:
+    output_dir: '%kernel.project_dir%/public' # default

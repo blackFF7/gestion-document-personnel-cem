@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modifier {{ personnel.nomAg }} {{ personnel.prenomAg }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4 mt-5 pt-5">
+    <div class="mt-4 pt-4">
+        {{ include('agent/_form.html.twig', {btn_label: 'Enregistrer les modifications', is_new: false}) }}
+    </div>
+</div>
+{% endblock %}

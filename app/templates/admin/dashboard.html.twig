@@ -1,0 +1,222 @@
+{% extends "@!EasyAdmin/layout.html.twig" %}
+
+{% block stylesheets %}
+<style>
+/* ── Scroll animations ─────────────────────────────────── */
+.scroll-hidden {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity .45s ease, transform .45s ease;
+}
+.scroll-visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity .45s ease, transform .45s ease;
+}
+
+/* ── Légendes graphes ──────────────────────────────────── */
+.chart-legend { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.legend-item  { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 3px 4px; border-radius: 5px; }
+.legend-dot   { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.legend-label { flex: 1; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend-val   { font-weight: 600; color: #222; white-space: nowrap; font-size: 12px; }
+.legend-val em { font-style: normal; font-weight: 400; color: #888; font-size: 11px; }
+.chart-note   { font-size: 11px; color: #888; }
+</style>
+{% endblock %}
+
+        {% block javascripts %}
+            {% block importmap %}{{ importmap('admin') }}{% endblock %}
+        {% endblock %}
+        
+{% block main %}
+
+{# Wrapper scroll — observe tous les data-scroll-target="item" #}
+<div class="container-fluid"
+     data-controller="dashboard scroll"
+     data-dashboard-role-value="{{ role }}"
+     data-dashboard-by-status-value="{{ byStatus          is defined ? byStatus|json_encode          : '{}' }}"
+     data-dashboard-by-conf-value="{{ byConf               is defined ? byConf|json_encode            : '{}' }}"
+     data-dashboard-by-direction-value="{{ byDirection     is defined ? byDirection|json_encode       : '[]' }}"
+     data-dashboard-by-agence-value="{{ byAgence           is defined ? byAgence|json_encode          : '[]' }}"
+     data-dashboard-monthly-deposits-value="{{ monthlyDeposits is defined ? monthlyDeposits|json_encode : '[]' }}"
+     data-dashboard-by-sexe-value="{{ bySexe               is defined ? bySexe|json_encode            : '{}' }}"
+     data-dashboard-by-famille-value="{{ byFamille         is defined ? byFamille|json_encode         : '{}' }}"
+     data-dashboard-by-anciennete-value="{{ byAnciennete   is defined ? byAnciennete|json_encode      : '[]' }}"
+     data-dashboard-archives-by-type-value="{{ archivesByType  is defined ? archivesByType|json_encode  : '{}' }}"
+     data-dashboard-archives-monthly-value="{{ archivesMonthly is defined ? archivesMonthly|json_encode : '[]' }}"
+     data-dashboard-appro-by-type-value="{{ approByType    is defined ? approByType|json_encode       : '[]' }}"
+     data-dashboard-queue-weekly-value="{{ queueWeekly     is defined ? queueWeekly|json_encode       : '[]' }}"
+     data-dashboard-my-docs-by-status-value="{{ myDocsByStatus   is defined ? myDocsByStatus|json_encode   : '{}' }}"
+     data-dashboard-my-monthly-deposit-value="{{ myMonthlyDeposit is defined ? myMonthlyDeposit|json_encode : '[]' }}">
+
+    <div class="doc-header d-flex flex-row justify-content-between">
+        <h1 class="doc-header__title">
+            Tableau de bord
+        </h1>
+        {% if is_granted('ROLE_ADMIN') %}
+            <a href="{{ path('app_agent_new') }}" class="btn-outline-primary">
+                 Nouveau personnel
+            </a>
+        {% endif %}
+    </div>
+
+    {# ── Métriques ── #}
+    <div class="row g-3 mb-4">
+        {% set metricLabels = {
+            'total':     'Total documents',
+            'personnel': 'Personnel actif',
+            'soumis':    'En attente',
+            'dossiers':  'Dossiers',
+            'approuve':  'Approuvés',
+            'rejete':    'Rejetés',
+            'tauxAppro': 'Taux approbation',
+            'brouillon': 'Brouillons',
+            'nouveaux':  'Nouveaux (trimestre)',
+            'docsRh':    'Docs accessibles',
+            'aArchiver': 'À archiver',
+            'archives':  'Docs archivés',
+            'ceMois':    'Archivés ce mois',
+            'service':   'Personnel service',
+            'typesDoc':  'Types de docs',
+        } %}
+        {% for key, val in stats %}
+        {# Chaque carte métrique est un item animé #}
+        <div class="col-6 col-md-3" data-scroll-target="item">
+            <div class="card border-0 bg-light h-100">
+                <div class="card-body">
+                    <div class="text-muted small">{{ metricLabels[key] ?? key }}</div>
+                    <div class="fs-3 fw-semibold">{{ key == 'tauxAppro' ? val ~ '%' : val }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {# ══════════════════════ ADMIN ══════════════════════════ #}
+    {% if role == 'ADMIN' %}
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6" data-scroll-target="item">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title text-muted mb-2">Documents par statut</h6>
+                    <div class="row flex-grow-1">
+                        <div class="col-6" style="position:relative;height:230px;">
+                            <canvas data-dashboard-target="chartStatus"></canvas>
+                        </div>
+                        <div class="col-6 d-flex align-items-center">
+                            <div id="legend-status" class="chart-legend w-100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6" data-scroll-target="item">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title text-muted mb-2">Niveau de confidentialité</h6>
+                    <div class="row flex-grow-1">
+                        <div class="col-6" style="position:relative;height:230px;">
+                            <canvas data-dashboard-target="chartConf"></canvas>
+                        </div>
+                        <div class="col-6 d-flex align-items-center">
+                            <div id="legend-conf" class="chart-legend w-100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12" data-scroll-target="item">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Dépôts mensuels (12 mois)</h6>
+                    <div style="position:relative;height:200px;">
+                        <canvas data-dashboard-target="chartMonthly"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6" data-scroll-target="item">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title text-muted mb-0">
+                            Personnel par service
+                            <span class="badge bg-primary ms-1 fw-normal" style="font-size:10px;">Siège</span>
+                        </h6>
+                        {% if byDirection is defined and byDirection|length > 10 %}
+                        <span class="chart-note">Top 10 sur {{ byDirection|length }}</span>
+                        {% endif %}
+                    </div>
+                    {% set dirH = byDirection is defined ? max(200, min(byDirection|length, 10) * 44 + 60) : 200 %}
+                    <div style="position:relative;height:{{ dirH }}px;">
+                        <canvas data-dashboard-target="chartDir"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6" data-scroll-target="item">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title text-muted mb-0">
+                            Personnel par agence
+                            <span class="badge bg-success ms-1 fw-normal" style="font-size:10px;">Réseau</span>
+                        </h6>
+                        {% if byAgence is defined and byAgence|length > 10 %}
+                        <span class="chart-note">Top 10 sur {{ byAgence|length }}</span>
+                        {% endif %}
+                    </div>
+                    {% set agH = byAgence is defined ? max(200, min(byAgence|length, 10) * 44 + 60) : 200 %}
+                    <div style="position:relative;height:{{ agH }}px;">
+                        <canvas data-dashboard-target="chartAgence"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+
+    {# ── Tableau documents récents ── #}
+    {% if lastDocuments is defined and lastDocuments|length > 0 %}
+    <div class="card mb-4" data-scroll-target="item">
+        <div class="card-body">
+            <h6 class="card-title text-muted">Documents récents</h6>
+            <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Référence</th><th>Titre</th>
+                        <th>Type</th><th>Statut</th><th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% set badgeMap = {
+                    'Brouillon': 'secondary', 'Soumis': 'primary',
+                    'Approuvé':  'success',   'Rejeté': 'danger', 'Archivé': 'info'
+                } %}
+                {% for doc in lastDocuments %}
+                    {% set statut = doc.statucDoc.value ?? doc.statucDoc %}
+                    <tr>
+                        <td><a href="{{ path('app_espace_show', {id: doc.id}) }}"><code>{{ doc.reference }}</code></a></td>
+                        <td>{{ doc.titre ?? '—' }}</td>
+                        <td>{{ doc.typeDocumentId.nomTypeDoc }}</td>
+                        <td><span class="badge bg-{{ badgeMap[statut] ?? 'secondary' }}">{{ statut }}</span></td>
+                        <td>{{ doc.creationDoc|date('d/m/Y') }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

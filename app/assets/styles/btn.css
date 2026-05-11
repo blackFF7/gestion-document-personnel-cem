@@ -1,0 +1,215 @@
+.floating-create-btn{
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+
+    width: 68px;
+    height: 68px;
+
+    border-radius: 50%;
+
+    z-index: 99999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text-decoration: none;
+
+    font-size: 2rem;
+    font-weight: bold;
+
+    color: white;
+
+    background: linear-gradient(135deg, #0d6efd, #6610f2);
+
+    box-shadow:
+        0 10px 30px rgba(13,110,253,.35),
+        0 4px 10px rgba(0,0,0,.2);
+
+    backdrop-filter: blur(12px);
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease,
+        opacity .25s ease;
+
+    cursor: grab;
+
+    user-select: none;
+    touch-action: none;
+}
+
+.floating-create-btn:hover{
+    transform: scale(1.08);
+
+    color: white;
+
+    box-shadow:
+        0 15px 40px rgba(13,110,253,.45),
+        0 8px 20px rgba(0,0,0,.25);
+}
+
+.floating-create-btn:active{
+    cursor: grabbing;
+    transform: scale(.96);
+}
+
+.floating-create-btn i{
+    pointer-events: none;
+}
+
+@media (max-width: 768px){
+
+    .floating-create-btn{
+        width: 60px;
+        height: 60px;
+        font-size: 1.6rem;
+
+        bottom: 18px;
+        right: 18px;
+    }
+
+}
+
+
+.floating-create-btn{
+
+    position: fixed;
+
+    bottom: 24px;
+    right: 24px;
+
+    height: 64px;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    padding: 0 20px;
+
+    border-radius: 999px;
+
+    z-index: 99999;
+
+    text-decoration: none;
+
+    background: linear-gradient(135deg, #0d6efd, #6610f2);
+
+    color: white;
+
+    box-shadow:
+        0 10px 30px rgba(13,110,253,.35),
+        0 4px 10px rgba(0,0,0,.2);
+
+    backdrop-filter: blur(12px);
+
+    overflow: hidden;
+
+    transition:
+        width .3s ease,
+        transform .25s ease,
+        box-shadow .25s ease,
+        background .25s ease;
+
+    cursor: grab;
+
+    user-select: none;
+
+    touch-action: none;
+}
+
+/* Icône */
+
+.floating-create-icon{
+
+    width: 42px;
+    height: 42px;
+
+    min-width: 42px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255,255,255,.15);
+
+    font-size: 1.4rem;
+}
+
+/* Texte */
+
+.floating-create-label{
+
+    max-width: 0;
+
+    opacity: 0;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    transition:
+        max-width .3s ease,
+        opacity .25s ease;
+}
+
+/* Hover */
+
+.floating-create-btn:hover{
+
+    transform: translateY(-4px);
+
+    color: white;
+
+    box-shadow:
+        0 16px 40px rgba(13,110,253,.45),
+        0 8px 20px rgba(0,0,0,.25);
+}
+
+.floating-create-btn:hover .floating-create-label{
+
+    max-width: 220px;
+
+    opacity: 1;
+}
+
+/* Drag */
+
+.floating-create-btn:active{
+
+    cursor: grabbing;
+}
+
+/* Mobile */
+
+@media (max-width: 768px){
+
+    .floating-create-btn{
+
+        bottom: 18px;
+        right: 18px;
+
+        height: 58px;
+
+        padding: 0 16px;
+    }
+
+    .floating-create-icon{
+
+        width: 38px;
+        height: 38px;
+
+        min-width: 38px;
+
+        font-size: 1.2rem;
+    }
+
+    /* Mobile = texte toujours caché */
+    .floating-create-label{
+
+        display: none;
+    }
+}

@@ -1,0 +1,129 @@
+services:
+  app:
+    env_file:
+      - .env.docker
+    build:
+      context: .
+      dockerfile: docker/frankenphp/Dockerfile
+      args:
+        INSTALL_XDEBUG: "true"
+    container_name: app
+    restart: always
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+      APP_RUNTIME: Runtime\FrankenPhpSymfony\Runtime
+      SERVER_NAME: :8080
+      CADDY_MERCURE: "off"
+      XDEBUG_MODE: "debug" # active avec XDEBUG_MODE=debug
+      TRUSTED_PROXIES: 127.0.0.1,REMOTE_ADDR
+      TRUSTED_HEADERS: x-forwarded-for,x-forwarded-host,x-forwarded-proto,x-forwarded-port
+    volumes:
+      - ./app:/app:z:z
+    command: >
+      sh -c "composer install --no-interaction &&
+             frankenphp run --config /etc/caddy/Caddyfile"
+    ports:
+      - "8001:8080"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    networks:
+      - symfony_net
+    mem_limit: 1.5g
+
+  postgres:
+    env_file:
+      -  .env.docker
+    image: postgres:18-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: digitdb
+      POSTGRES_USER: digituser
+      POSTGRES_PASSWORD: blackdev007
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    networks:
+      - symfony_net
+    mem_limit: 512m
+
+  redis:
+    image: redis:7-alpine
+    env_file:
+      - .env.docker
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru --requirepass "blackdev007"
+    networks:
+      - symfony_net
+    mem_limit: 256m
+
+  minio:
+    image: minio/minio
+    env_file:
+      - .env.docker
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: "admin"
+      MINIO_ROOT_PASSWORD: "blackdev007"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - symfony_net
+    mem_limit: 256m
+
+  # Créer les buckets automatiquement au démarrage
+  minio_init:
+    image: minio/mc
+    env_file:
+      - .env.docker
+    container_name: minio_init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://minio:9000 admin blackdev007;
+      mc mb --ignore-existing local/documents;
+      mc mb --ignore-existing local/previews;
+      mc mb --ignore-existing local/photos-profil;
+      exit 0;
+      "
+    networks:
+      - symfony_net
+    mem_limit: 128m
+
+  adminer:
+    env_file:
+      - .env.docker
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    networks:
+      - symfony_net
+    mem_limit: 128m
+
+networks:
+  symfony_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: digitdev_postgres_data
+  minio_data:
+    name: digitdev_minio_data
+  redis_data:
+    name: digitdev_redis_data

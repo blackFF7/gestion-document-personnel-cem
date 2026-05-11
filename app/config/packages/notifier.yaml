@@ -1,0 +1,8 @@
+# config/packages/notifier.yaml
+framework:
+    notifier:
+        channel_policy:
+            urgent: ['browser']
+            high: ['browser']
+            medium: ['browser']
+            low: ['browser']

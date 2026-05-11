@@ -1,0 +1,22 @@
+{% if app.request.attributes.get('_route') != 'app_login' %}
+    {% if app.user and app.request.attributes.get('_route') != 'document_new' %}
+
+    <a
+        href="{{ path('document_new') }}"
+        class="floating-create-btn"
+        data-controller="floating-button"
+        title="Nouveau document"
+    >
+
+        <span class="floating-create-label">
+            Nouveau document
+        </span>
+
+        <span class="floating-create-icon">
+            {{ ux_icon('fluent-mdl2:circle-addition-solid') }}
+        </span>
+
+    </a>
+
+    {% endif %}
+{% endif %}

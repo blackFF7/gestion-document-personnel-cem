@@ -1,0 +1,143 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ document.reference }}{% endblock %}
+
+{% block body %}
+<div class="container pt-5 mt-5 mb-5">
+    <div class="d-flex justify-content-between align-items-center flex-column flex-md-row gap-2 mt-4 pt-4 mb-4">
+        <h4 class="mb-0">{{ document.titre ?? document.reference }}</h4>
+        <div class="d-flex gap-2">
+            <a href="{{ path('document_edit', {id: document.id}) }}" class="btn btn-sm btn-outline-primary">
+                Modifier
+            </a>
+            <a href="{{ path('document_download', {id: document.id}) }}" class="btn btn-sm btn-outline-secondary">
+                Télécharger
+            </a>
+            <a href="{{ path('document_index') }}" class="btn btn-sm btn-outline-warning">
+                Mes Documents
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        {# ── Informations ── #}
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Informations</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td class="text-muted" style="width:40%">Référence</td>
+                            <td><code>{{ document.reference }}</code></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Titre</td>
+                            <td>{{ document.titre ?? '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Titulaire</td>
+                            <td>{{ document.titulaire ?? '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Type</td>
+                            <td>{{ document.typeDocumentId.nomTypeDoc }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Dossier</td>
+                            <td>{{ document.typeDocumentId.dossierId.nomDos }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Confidentialité</td>
+                            <td>
+                                {% set conf = document.typeDocumentId.dossierId.niveauConf %}
+                                {% set confBadge = {
+                                    'Public':                   'success',
+                                    'Confidentiel':             'warning',
+                                    'Strictement confidentiel': 'danger',
+                                } %}
+                                <span class="badge bg-{{ confBadge[conf.value] ?? 'secondary' }}">
+                                    {{ conf.value }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Statut</td>
+                            <td>
+                                {% set statut = document.statucDoc.value ?? document.statucDoc %}
+                                {% set badgeMap = {
+                                    'Brouillon': 'secondary',
+                                    'Soumis':    'primary',
+                                    'Approuvé':  'success',
+                                    'Rejeté':    'danger',
+                                    'Archivé':   'info',
+                                } %}
+                                <span class="badge bg-{{ badgeMap[statut] ?? 'secondary' }}">
+                                    {{ statut }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Date d'arrivée</td>
+                            <td>{{ document.dateArriveDoc ? document.dateArriveDoc|date('d/m/Y') : '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Créé le</td>
+                            <td>{{ document.creationDoc|date('d/m/Y H:i') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Mis à jour</td>
+                            <td>{{ document.majDoc|date('d/m/Y H:i') }}</td>
+                        </tr>
+                    </table>
+
+                    {% if document.description %}
+                    <hr>
+                    <h6 class="text-muted">Description</h6>
+                    <p class="small">{{ document.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# ── Actions ── #}
+            {% if is_granted('ROLE_SAP') or is_granted('ROLE_ADMIN') %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Actions de validation</h6>
+                    <form method="post" action="{{ path('document_edit', {id: document.id}) }}" class="d-flex gap-2">
+                        <input type="hidden" name="_token" value="{{ csrf_token('edit' ~ document.id) }}">
+                        <button name="action" value="approuver" class="btn btn-success btn-sm flex-fill">
+                            Approuver
+                        </button>
+                        <button name="action" value="rejeter" class="btn btn-danger btn-sm flex-fill">
+                            Rejeter
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# ── Aperçu ── #}
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-3">Aperçu</h6>
+                    {% if preview %}
+                        <img src="{{ preview }}" alt="Aperçu" class="img-fluid rounded">
+                    {% else %}
+                        <div class="d-flex flex-column align-items-center justify-content-center text-muted py-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="mb-3 opacity-25" viewBox="0 0 16 16">
+                                <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5z"/>
+                                <path d="M9.5 3V0L14 4.5h-3A1.5 1.5 0 0 1 9.5 3z"/>
+                            </svg>
+                            <span class="small">Aucun aperçu disponible</span>
+                            <a href="{{ path('document_download', {id: document.id}) }}" class="btn btn-sm btn-outline-primary mt-3">
+                                Télécharger le fichier
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

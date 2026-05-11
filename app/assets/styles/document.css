@@ -1,0 +1,290 @@
+/* =============================================================================
+   app/assets/styles/document_form.css
+   Styles du formulaire document (upload, aperçu, champs, actions)
+   Importer dans app.css : @import './document_form.css';
+============================================================================= */
+
+/* ── Page wrapper ─────────────────────────────────────────────────────────── */
+.doc-form-page {
+    padding: 1rem 0 2rem;
+}
+
+/* ── Cartes ───────────────────────────────────────────────────────────────── */
+.doc-preview-card,
+.doc-fields-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+    overflow: hidden;
+}
+
+.doc-card-header {
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    border-bottom: 1px solid var(--bs-border-color);
+    font-size: .82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--bs-secondary-color, #6c757d);
+    padding: .65rem 1rem;
+}
+
+/* ── Zone upload ──────────────────────────────────────────────────────────── */
+.upload-zone {
+    border: 2px dashed var(--bs-border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color .2s ease, background .2s ease;
+}
+
+.upload-zone:hover,
+.upload-zone:focus-within {
+    border-color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), .04);
+}
+
+.upload-zone.drag-over {
+    border-color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), .08);
+    transform: scale(1.01);
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.upload-zone-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    padding: 1.2rem;
+    cursor: pointer;
+    width: 100%;
+    margin: 0;
+}
+
+.upload-zone-icon {
+    font-size: 2rem;
+    color: var(--bs-primary);
+    line-height: 1;
+}
+
+.upload-zone-main {
+    font-weight: 600;
+    font-size: .88rem;
+    color: var(--bs-body-color);
+}
+
+.upload-zone-sub {
+    font-size: .74rem;
+    color: var(--bs-secondary-color, #6c757d);
+    text-align: center;
+}
+
+.upload-zone-filename {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--bs-success);
+    background: rgba(var(--bs-success-rgb), .1);
+    border-radius: 6px;
+    padding: .25rem .6rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* ── Zone aperçu ──────────────────────────────────────────────────────────── */
+.preview-container {
+    flex: 1;
+    min-height: 200px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    border: 1px solid var(--bs-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    color: var(--bs-secondary-color, #adb5bd);
+    font-size: .82rem;
+}
+
+.preview-placeholder i {
+    font-size: 2.5rem;
+}
+
+.preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.preview-file-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    padding: 1rem;
+}
+
+.preview-file-icon i {
+    font-size: 3rem;
+}
+
+.preview-file-name {
+    font-size: .78rem;
+    color: var(--bs-body-color);
+    word-break: break-all;
+    text-align: center;
+}
+
+/* ── Floating labels ──────────────────────────────────────────────────────── */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select ~ label {
+    opacity: .7;
+    transform: scale(.82) translateY(-.85rem) translateX(.1rem);
+}
+
+/* Champ readonly */
+.has-readonly {
+    position: relative;
+}
+
+.has-readonly .form-control[readonly] {
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    color: var(--bs-secondary-color, #6c757d);
+    cursor: default;
+    padding-right: 4rem;
+}
+
+.readonly-badge {
+    position: absolute;
+    top: 50%;
+    right: .75rem;
+    transform: translateY(-50%);
+    font-size: .68rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color, #6c757d);
+    background: var(--bs-secondary-bg, #e9ecef);
+    border-radius: 20px;
+    padding: .1rem .45rem;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* ── Champs autocomplete (Tom Select) ─────────────────────────────────────── */
+.autocomplete-field-wrapper {
+    position: relative;
+}
+
+.autocomplete-label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--bs-secondary-color, #6c757d);
+    margin-bottom: .3rem;
+    padding-left: .25rem;
+}
+
+.autocomplete-label.text-danger::before {
+    content: '\F33A'; /* bi-exclamation-circle */
+    font-family: 'bootstrap-icons';
+    margin-right: .25rem;
+}
+
+.autocomplete-field-wrapper .ts-wrapper .ts-control {
+    border: 1px solid var(--bs-border-color);
+    border-radius: .375rem;
+    min-height: 46px;
+    padding: .55rem .75rem;
+    font-size: .875rem;
+    background: var(--bs-body-bg);
+    box-shadow: none;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.autocomplete-field-wrapper .ts-wrapper.focus .ts-control {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .25);
+}
+
+.autocomplete-field-wrapper .is-invalid + .ts-wrapper .ts-control,
+.autocomplete-field-wrapper .ts-wrapper.has-error .ts-control {
+    border-color: var(--bs-danger);
+}
+
+/* ── Messages d'erreur ────────────────────────────────────────────────────── */
+.field-error-block {
+    font-size: .78rem;
+    color: var(--bs-danger);
+    display: flex;
+    align-items: flex-start;
+    gap: .3rem;
+    line-height: 1.3;
+}
+
+.invalid-feedback {
+    font-size: .78rem;
+}
+
+/* ── Boutons d'action ─────────────────────────────────────────────────────── */
+.doc-form-actions {
+    display: flex;
+    gap: .75rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.doc-submit-btn {
+    min-width: 180px;
+}
+
+/* ── Chevron animé (bouton aperçu mobile) ─────────────────────────────────── */
+.toggle-chevron {
+    transition: transform .2s ease;
+}
+
+[aria-expanded="true"] .toggle-chevron {
+    transform: rotate(180deg);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+    .preview-container {
+        min-height: 250px;
+    }
+
+    .doc-form-actions {
+        justify-content: stretch;
+    }
+
+    .doc-form-actions .btn {
+        flex: 1;
+        text-align: center;
+    }
+
+    .doc-submit-btn {
+        min-width: unset;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .upload-zone-label {
+        padding: .85rem;
+    }
+
+    .upload-zone-icon {
+        font-size: 1.5rem;
+    }
+}

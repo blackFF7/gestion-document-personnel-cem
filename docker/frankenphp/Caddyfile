@@ -1,0 +1,15 @@
+:8080 {
+    root * /app/public
+    encode gzip zstd
+
+    @static {
+        file
+    }
+    handle @static {
+        file_server
+    }
+
+    handle {
+        php_server
+    }
+}

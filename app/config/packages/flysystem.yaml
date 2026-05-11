@@ -1,0 +1,22 @@
+flysystem:
+    storages:
+        documents.storage:
+            adapter: 'aws'
+            visibility: private
+            options:
+                client: documents_s3_client
+                bucket: "%env(MINIO_BUCKET_DOCUMENTS)%"
+
+        previews.storage:
+            adapter: 'aws'
+            visibility: private
+            options:
+                client: documents_s3_client
+                bucket: "%env(MINIO_BUCKET_PREVIEWS)%"
+
+        photos_profil.storage:
+            adapter: 'aws'
+            visibility: private
+            options:
+                client: documents_s3_client
+                bucket: "%env(MINIO_BUCKET_PHOTOS)%"

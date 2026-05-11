@@ -1,0 +1,49 @@
+# config/packages/vich_uploader.yaml
+vich_uploader:
+    db_driver: orm
+    storage: flysystem
+
+    mappings:
+
+        # ── Documents (PDF, DOCX, XLSX, images) ──────────────────────────────
+        documents:
+            uri_prefix: "%env(MINIO_PUBLIC_ENDPOINT)%/%env(MINIO_BUCKET_DOCUMENTS)%"
+            upload_destination: documents.storage
+
+            # Namer : référence sluggifiée du document (+ _v<n> si collision)
+            # Résultat ex. : 002_1_ETI_Acte-de-naissance_du_01.01.2024.pdf
+            namer:
+                service: App\Namer\DocumentNamer
+
+            # Directory : <IM>/<nomenclatureDossier>/<Annee>/
+            # Résultat ex. : 002/ETI/2024/
+            # directory_namer:
+            #     service: App\Namer\DocumentDirectoryNamer
+
+        # ── Photos de profil ─────────────────────────────────────────────────
+        photos_profil:
+            uri_prefix: "%env(MINIO_PUBLIC_ENDPOINT)%/%env(MINIO_BUCKET_PHOTOS)%"
+            upload_destination: photos_profil.storage
+
+            # Namer : <IM>_<YmdHis>.<ext>
+            # Résultat ex. : 002_20260505143022.jpg
+            namer:
+                service: App\Namer\PhotoProfilNamer
+
+            # Directory : <IM>/
+            # Résultat ex. : 002/
+            # directory_namer:
+            #     service: App\Namer\PhotoProfilDirectoryNamer
+
+        # ── Aperçus / previews (générés automatiquement) ─────────────────────
+        previews:
+            uri_prefix: "%env(MINIO_PUBLIC_ENDPOINT)%/%env(MINIO_BUCKET_PREVIEWS)%"
+            upload_destination: previews.storage
+
+            # SmartUniqueNamer suffit pour les previews (nom interne, jamais affiché)
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+            directory_namer:
+                service: Vich\UploaderBundle\Naming\SubdirDirectoryNamer
+                options:
+                    chars_per_dir: 3
+                    dirs: 1

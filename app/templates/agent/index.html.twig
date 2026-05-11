@@ -1,0 +1,168 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Personnel{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4 p-5 pt-5 mt-5 doc-page">
+    <!-- Header -->
+    <div class="doc-header mt-4 pt-4">
+        <h1 class="doc-header__title">
+            <i class="bi bi-people-fill me-2 text-primary"></i>Les personnels
+        </h1>
+        {% if is_granted('ROLE_SAP') %}
+            <a href="{{ path('app_agent_new') }}" class="btn-new">
+                 <i class="bi bi-plus-lg me-1"></i>Nouveau personnel
+            </a>
+        {% endif %}
+    </div>
+
+    {% include './components/flash.html.twig' %}
+
+    <!-- Search -->
+    <div class="filter-card mb-3">
+        <label for="searchInput" class="form-label">Recherche</label>
+        <input type="search" id="searchInput" class="form-control" placeholder="Rechercher par nom, IM, fonction…">
+    </div>
+
+    <!-- Tableau Desktop -->
+    <div class="doc-table-wrap">
+        <table class="doc-table" id="personnelTable">
+            <thead>
+                <tr>
+                    <th>Photo</th>
+                    <th>IM</th>
+                    <th>Nom & Prénom</th>
+                    <th>Fonction</th>
+                    <th>Affectation</th>
+                    <th>Statut</th>
+                    {% if is_granted('ROLE_ADMIN') %}<th>Rôles</th>{% endif %}
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in personnels %}
+                    <tr>
+                        <td>
+                            {% if p.photoProfil %}
+                                {% set photo = photos[p.id] ?? null %}
+                                {% if photo %}
+                                    <img src="{{ photo }}" class="file-preview">
+                                {% else %}
+                                    <div class="file-preview d-inline-flex align-items-center justify-content-center text-white fw-bold"
+                                         style="background: linear-gradient(135deg, #0d6efd, #6610f2);">
+                                        {{ (p.nomAg|first ~ p.prenomAg|first)|upper }}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="file-preview bg-primary d-inline-flex align-items-center justify-content-center text-white fw-bold">
+                                    {{ p.nomAg|first }}{{ p.prenomAg|first }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td><span class="ref-code">{{ p.IMFormatted }}</span></td>
+                        <td><strong>{{ p.nomAg }} {{ p.prenomAg }}</strong></td>
+                        <td>{{ p.fonctionID?.nomFon ?? '–' }}</td>
+                        <td>
+                            {% if p.BackFront %}
+                                {% for ap in p.agencePersonnels %}
+                                    <span class="doc-type">{{ ap.agenceID?.nomAgc }}</span>
+                                {% endfor %}
+                            {% else %}
+                                {% for dp in p.directionPersonnels %}
+                                    <span class="doc-type">{{ dp.serviceID?.nomSer }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </td>
+                        <td><span class="status-badge status-{{ p.statusCompte.value }}">{{ p.statusCompte.value }}</span></td>
+                        {% if is_granted('ROLE_ADMIN') %}
+                        <td>
+                            {% for role in p.roles %}
+                                {% if role != 'ROLE_USER' %}
+                                    <span class="doc-type">{{ role }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        {% endif %}
+                        <td class="action-group">
+                            <a href="{{ path('app_agent_show', {id: p.id}) }}" class="btn-action view">Voir</a>
+                            {% if is_granted('PERSONNEL_EDIT', p) %}
+                            <a href="{{ path('app_agent_edit', {id: p.id}) }}" class="btn-action edit">Modifier</a>
+                            {% endif %}
+                            {% if is_granted('ROLE_ADMIN') %}
+                            <button class="btn-action del" data-bs-toggle="modal" data-bs-target="#deleteModal{{ p.id }}">Supprimer</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="8" class="empty-state">Aucun personnel trouvé</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="pagination-wrap">
+            {{ knp_pagination_render(personnels) }}
+        </div>
+    </div>
+
+    <!-- Cards Mobile -->
+    <div class="doc-cards">
+        {% for p in personnels %}
+            <div class="doc-card status-{{ p.statusCompte.value|lower|slice(0,2) }}">
+                <div class="doc-card__header col-12">
+                    <div class="col-6">
+                        <span class="doc-card__ref">{{ p.IMFormatted }}</span>
+                        <h5 class="doc-card__title">{{ p.nomAg }} {{ p.prenomAg }}</h5>
+                    </div>
+                    <div class="col-6 d-flex justify-content-end">
+
+                            {% if p.photoProfil %}
+                                {% set photo = photos[p.id] ?? null %}
+                                {% if photo %}
+                                    <img src="{{ photo }}" class="file-preview">
+                                {% else %}
+                                    <div class="file-preview d-inline-flex align-items-center justify-content-center text-white fw-bold"
+                                         style="background: linear-gradient(135deg, #0d6efd, #6610f2);">
+                                        {{ (p.nomAg|first ~ p.prenomAg|first)|upper }}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="file-preview bg-primary d-inline-flex align-items-center justify-content-center text-white fw-bold">
+                                    {{ p.nomAg|first }}{{ p.prenomAg|first }}
+                                </div>
+                            {% endif %}
+                    </div>
+                </div>
+                <p class="doc-card__type">{{ p.fonctionID?.nomFon ?? '–' }}</p>
+                <div class="doc-card__meta">
+                    <span class="doc-card__personnel">{{ p.username }}</span>
+                    <span class="doc-card__date">{{ p.statusCompte.value }}</span>
+                </div>
+                <div class="doc-card__actions">
+                    <a href="{{ path('app_agent_show', {id: p.id}) }}" class="btn-action view">Voir</a>
+                    {% if is_granted('PERSONNEL_EDIT', p) %}
+                    <a href="{{ path('app_agent_edit', {id: p.id}) }}" class="btn-action edit">Modifier</a>
+                    {% endif %}
+                    {% if is_granted('ROLE_ADMIN') %}
+                    <button class="btn-action del" data-bs-toggle="modal" data-bs-target="#deleteModal{{ p.id }}">Supprimer</button>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-state">Aucun personnel trouvé</div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.getElementById('searchInput')?.addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    // Filtre tableau
+    document.querySelectorAll('#personnelTable tbody tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+    // Filtre cards
+    document.querySelectorAll('.doc-cards .doc-card').forEach(card => {
+        card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

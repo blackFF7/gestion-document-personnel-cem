@@ -1,0 +1,70 @@
+{#
+    ═══════════════════════════════════════════════════════════════════════════
+    SECTION PHOTO — à coller dans PersonnelForm.html.twig
+
+    Corrections appliquées :
+    - Suppression de data-model="photoPreviewName" sur l'<input file>
+      (un input[type=file] ne peut pas être bindé via data-model LiveComponent,
+       cela déclenchait un re-render qui effaçait le preview)
+    - Le controller Stimulus "photo-preview" gère uniquement l'aperçu local
+    - Le fichier est transmis au serveur via enctype="multipart/form-data"
+      au moment du submit (LiveAction save lit $request->files->get('photo_profil'))
+    - data-controller placé sur la zone photo uniquement (pas sur le root)
+    ═══════════════════════════════════════════════════════════════════════════
+#}
+
+{# ═════════ PHOTO ═════════ #}
+<div class="form-section" data-controller="photo-preview">
+
+    <h5 class="section-title">Photo de profil</h5>
+
+    <div class="photo-upload-zone">
+
+        {# ── Aperçu ─────────────────────────────────────────────────────── #}
+        <div class="photo-preview-circle">
+            {% if photoPreviewName %}
+                {# Mode édition : photo existante déjà enregistrée #}
+                <img src="/uploads/photos_profil/{{ photoPreviewName }}"
+                     alt="Photo de profil"
+                     class="preview-img rounded-circle"
+                     data-photo-preview-target="preview">
+            {% else %}
+                {# Pas encore de photo : placeholder + img cachée prête pour le preview #}
+                <div class="preview-placeholder"
+                     data-photo-preview-target="placeholder">
+                    <small>Aucune photos</small>
+                </div>
+                <img src=""
+                     alt="Aperçu"
+                     class="d-none rounded-circle" style="width: 150px;"
+                     data-photo-preview-target="preview">
+            {% endif %}
+        </div>
+
+        {# ── Contrôles ──────────────────────────────────────────────────── #}
+        <div class="photo-upload-controls">
+            <label class="btn btn-primary" for="photo_profil_input">
+                Choisir une photo
+            </label>
+
+            {#
+                IMPORTANT : PAS de data-model ici.
+                data-model sur un input[type=file] n'est pas supporté par LiveComponent.
+                Le re-render qu'il déclencherait effacerait le preview immédiatement.
+                Le fichier sera lu dans $request->files->get('photo_profil') au save().
+            #}
+            <input type="file"
+                   id="photo_profil_input"
+                   name="photo_profil"
+                   accept="image/jpeg,image/png,image/webp,image/gif"
+                   class="file-input-hidden"
+                   data-photo-preview-target="input"
+                   data-action="change->photo-preview#preview">
+
+            <small class="text-muted d-block mt-1">
+                Taille maximale : 5 Mo
+            </small>
+        </div>
+
+    </div>
+</div>

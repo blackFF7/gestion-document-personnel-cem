@@ -1,0 +1,285 @@
+{# templates/document/show.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Document : {{ document.reference }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid px-4 py-3 mt-5 pt-5">
+
+    {# Flash messages #}
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type == 'success' ? 'success' : (type == 'error' ? 'danger' : 'warning') }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4 pt-4">
+        <div>
+            <h1 class="h3 fw-bold mb-0">
+                {{ document.titre ?? document.reference }}
+            </h1>
+        </div>
+        <div class="d-flex gap-2">
+            {# Bouton modifier #}
+            {% if is_granted('DOCUMENT_EDIT', document) %}
+                <a href="{{ path('app_espace_edit', {'id': document.id}) }}"
+                   class="btn btn-warning">
+                    Modifier
+                </a>
+            {% endif %}
+
+            {# Bouton télécharger (ARCHIVÉ seulement) #}
+            {% if canDownload %}
+                <a href="{{ path('app_espace_download', {'id': document.id}) }}"
+                   class="btn btn-success">
+                    Télécharger
+                </a>
+            {% endif %}
+
+            {# Bouton supprimer #}
+            {% if canDelete %}
+                <button type="button" class="btn btn-danger"
+                        data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    Supprimer
+                </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        {# ── Colonne gauche : Informations + Actions workflow ────────────────── #}
+        <div class="col-lg-5">
+
+            {# Statut #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    {% set statut = document.statucDoc.value %}
+
+                    {# Progression workflow #}
+                    <div class="mt-2">
+                        {% set steps = ['Brouillon', 'Soumis', 'Approuvé', 'Archivé'] %}
+                        {% set stepIndex = {
+                            'Brouillon': 0, 'Soumis': 1, 'Approuvé': 2,
+                            'Rejeté': 1, 'Archivé': 3
+                        } %}
+                        {% set currentStep = stepIndex[statut] ?? 0 %}
+                        <div class="d-flex justify-content-between position-relative">
+                            <div class="progress position-absolute" style="height: 2px; top: 10px; left: 10%; width: 80%; z-index:0;">
+                                <div class="progress-bar bg-primary" style="width: {{ (currentStep / 3) * 100 }}%"></div>
+                            </div>
+                            {% for i, step in steps %}
+                                <div class="text-center" style="z-index: 1;">
+                                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center
+                                         {{ i <= currentStep ? 'bg-primary text-white' : 'bg-light border' }}"
+                                         style="width:22px;height:22px;font-size:11px;">
+                                        {{ i + 1 }}
+                                    </div>
+                                    <div class="small text-muted mt-1" style="font-size:10px;">{{ step }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ── Actions de workflow ────────────────────────────────────────── #}
+            {% if canApprove or canRejectChef or canArchive or canRejectSap %}
+            <div class="card shadow-sm mb-3 border-primary">
+                <div class="card-header bg-primary text-white fw-bold">
+                    <i class="bi bi-lightning me-1"></i>Actions
+                </div>
+                <div class="card-body d-flex flex-wrap gap-2">
+
+                    {# CHEF : Approuver ou Rejeter (SOUMIS) #}
+                    {% if canApprove %}
+                    <form action="{{ path('app_espace_approuver', {'id': document.id}) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="_token" value="{{ csrf_token('approuver' ~ document.id) }}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i>Approuver
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {% if canRejectChef %}
+                    <button type="button" class="btn btn-danger"
+                            data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <i class="bi bi-x-circle me-1"></i>Rejeter
+                    </button>
+                    {% endif %}
+
+                    {# SAP/ADMIN : Archiver ou Rejeter (APPROUVÉ) #}
+                    {% if canArchive %}
+                    <form action="{{ path('app_espace_archiver', {'id': document.id}) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="_token" value="{{ csrf_token('archiver' ~ document.id) }}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-archive me-1"></i>Archiver
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {% if canRejectSap %}
+                    <button type="button" class="btn btn-outline-danger"
+                            data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <i class="bi bi-x-circle me-1"></i>Rejeter
+                    </button>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── Informations du document ───────────────────────────────────── #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold">Informations</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-5 text-muted">Référence</dt>
+                        <dd class="col-7"><code>{{ document.reference }}</code></dd>
+
+                        <dt class="col-5 text-muted">Personnel</dt>
+                        <dd class="col-7">
+                            {{ document.personnelID.fullName }}
+                            <br><small class="text-muted">IM {{ document.personnelID.IMFormatted }}</small>
+                        </dd>
+
+                        <dt class="col-5 text-muted">Type</dt>
+                        <dd class="col-7">{{ document.typeDocumentID.nomTypeDoc }}</dd>
+
+                        <dt class="col-5 text-muted">Dossier</dt>
+                        <dd class="col-7">
+                            {{ document.typeDocumentID.dossierID.nomDos }}
+                            <br>
+                            {% set conf = document.typeDocumentID.dossierID.niveauConf.value %}
+                            {% if conf == 'Strictement confidentiel' %}
+                                <span class="badge bg-danger">🔒 {{ conf }}</span>
+                            {% elseif conf == 'Confidentiel' %}
+                                <span class="badge bg-warning text-dark">🔐 {{ conf }}</span>
+                            {% else %}
+                                <span class="badge bg-success">🌐 {{ conf }}</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-5 text-muted">Titulaire</dt>
+                        <dd class="col-7">{{ document.titulaire ?? '—' }}</dd>
+
+                        <dt class="col-5 text-muted">Date arrivée</dt>
+                        <dd class="col-7">{{ document.dateArriveDoc ? document.dateArriveDoc|date('d/m/Y') : '—' }}</dd>
+
+                        <dt class="col-5 text-muted">Description</dt>
+                        <dd class="col-7">{{ document.description ?? '—' }}</dd>
+
+                        <dt class="col-5 text-muted">Créé le</dt>
+                        <dd class="col-7">{{ document.creationDoc|date('d/m/Y H:i') }}</dd>
+
+                        <dt class="col-5 text-muted">Modifié le</dt>
+                        <dd class="col-7">{{ document.majDoc|date('d/m/Y H:i') }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+        </div>
+
+        {# ── Colonne droite : Prévisualisation du document ────────────────────── #}
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-bold d-flex justify-content-center">
+                    <small class="text-muted">{{ document.fichier }}</small>
+                </div>
+                <div class="card-body p-0" style="min-height: 600px;">
+                    {% if previewUrl %}
+                        {% set ext = document.fichier|split('.')|last|lower %}
+                        {% if ext in ['pdf'] %}
+                            {# PDF : affichage natif #}
+                            <iframe src="{{ previewUrl }}"
+                                    width="100%" height="650"
+                                    style="border:none; border-radius: 0 0 0.375rem 0.375rem;">
+                            </iframe>
+                        {% elseif ext in ['jpg', 'jpeg', 'png', 'gif', 'webp'] %}
+                            {# Image #}
+                            <div class="d-flex align-items-center justify-content-center h-100 p-3">
+                                <img src="{{ previewUrl }}"
+                                     alt="Aperçu du document"
+                                     class="img-fluid rounded"
+                                     style="max-height: 600px; object-fit: contain;">
+                            </div>
+                        {% else %}
+                            {# DOCX/XLSX : pas de prévisualisation native #}
+                            <div class="d-flex flex-column align-items-center justify-content-center h-100 py-5 text-muted">
+                                <i class="bi bi-file-earmark-text fs-1 mb-3"></i>
+                                <p class="mb-1">Prévisualisation non disponible pour ce type de fichier.</p>
+                                <small>{{ ext|upper }} – {{ document.fichier }}</small>
+                                {% if canDownload %}
+                                    <a href="{{ path('app_espace_download', {'id': document.id}) }}"
+                                       class="btn btn-outline-success mt-3">
+                                        <i class="bi bi-download me-1"></i>Télécharger le fichier
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="d-flex flex-column align-items-center justify-content-center h-100 py-5 text-muted">
+                            <i class="bi bi-cloud-slash fs-1 mb-3"></i>
+                            <p>Fichier non disponible ou inaccessible.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{# ── Modal de rejet ─────────────────────────────────────────────────────────── #}
+{% if canRejectChef or canRejectSap %}
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-x-circle me-1"></i>Rejeter le document</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir rejeter ce document ?<br>
+                <strong>Le créateur en sera notifié.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form action="{{ path('app_espace_rejeter', {'id': document.id}) }}" method="POST">
+                    <input type="hidden" name="_token" value="{{ csrf_token('rejeter' ~ document.id) }}">
+                    <button type="submit" class="btn btn-danger">Confirmer le rejet</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ── Modal de suppression ───────────────────────────────────────────────────── #}
+{% if canDelete %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-trash me-1"></i>Supprimer le document</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer définitivement ce document ?</p>
+                <p class="text-danger fw-bold">⚠️ Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form action="{{ path('app_espace_delete', {'id': document.id}) }}" method="POST">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ document.id) }}">
+                    <button type="submit" class="btn btn-danger">Supprimer définitivement</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

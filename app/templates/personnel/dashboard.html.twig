@@ -1,0 +1,99 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block body %}
+
+<div class="container mt-4">
+
+    <h3 class="mb-4">Tableau de bord - {{ app.user.fullName }}</h3>
+
+    <!-- CARTES RESUME EN GRID -->
+
+    <div class="row mb-4 g-3">
+
+        <!-- Total Documents -->
+        <div class="col-sm-6 col-md-4">
+            <div class="card shadow-sm border-start border-4 border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-uppercase">Total Documents</h6>
+                            <h2 class="card-text">{{ totalDocs }}</h2>
+                        </div>
+                        <div>
+                            <i class="bi bi-file-earmark-text-fill fs-2 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Autres cartes potentielles -->
+        <div class="col-sm-6 col-md-4">
+            <div class="card shadow-sm border-start border-4 border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-uppercase">Dossiers</h6>
+                            <h2 class="card-text">{{ statsDossier|length }}</h2>
+                        </div>
+                        <div>
+                            <i class="bi bi-folder-fill fs-2 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TABLEAU STATS PAR STATUS -->
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    Classement par Status
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for stat in statsStatus %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>{{ stat.status.value }}</span>
+                                <span class="badge bg-secondary rounded-pill">{{ stat.total }}</span>
+                            </li>
+                        {% else %}
+                            <li class="list-group-item text-center">Aucun document</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLEAU STATS PAR DOSSIER -->
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    Classement par Dossier
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for dos in statsDossier %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>{{ dos.dossier }}</span>
+                                <span class="badge bg-success rounded-pill">{{ dos.total }}</span>
+                            </li>
+                        {% else %}
+                            <li class="list-group-item text-center">Aucun dossier</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

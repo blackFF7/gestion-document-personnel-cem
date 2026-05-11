@@ -1,0 +1,237 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Documents{% endblock %}
+
+
+{% block body %}
+<div class="doc-page container-fluid px-3 px-lg-4 py-5 mt-5">
+
+    <!-- HEADER -->
+    <div class="doc-header mt-4 pt-4">
+        <div>
+            <h1 class="doc-header__title">Mes Documents</h1>
+            <div class="doc-header__count">
+                {{ pagination.getTotalItemCount() }} document(s)
+            </div>
+        </div>
+
+        <a href="{{ path('document_new') }}" class="btn-new">
+            <i class="bi bi-plus-lg"></i>
+            Nouveau document
+        </a>
+    </div>
+
+    {% include './components/flash.html.twig' %}
+
+    {% if pagination is not empty %}
+
+        <!-- DESKTOP TABLE -->
+        <div class="doc-table-wrap">
+
+            <table class="doc-table">
+
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Document</th>
+                        <th>Type</th>
+                        <th>Fichier</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                {% for doc in pagination %}
+                    <tr>
+
+                        <td>
+                            <a href="{{ path('app_espace_show',{id:doc.id}) }}"
+                               class="ref-code">
+                                #{{ doc.reference }}
+                            </a>
+                        </td>
+
+                        <td>
+                            <div class="doc-title">
+                                {{ doc.titre }}
+                            </div>
+
+                            <div class="doc-sub">
+                                Créé récemment
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="doc-type">
+                                {{ doc.typeDocumentID.nomTypeDoc }}
+                            </span>
+                        </td>
+
+                        <td>
+
+                            {% if doc.fichier %}
+                                {% set ext = doc.fichier|split('.')|last %}
+
+                                {% if ext in ['jpg','jpeg','png','webp'] %}
+                                    <img
+                                        src="{{ asset('uploads/documents/' ~ doc.fichier) }}"
+                                        class="file-preview"
+                                        alt=""
+                                    >
+                                {% else %}
+                                    <span class="doc-type">
+                                        {{ ext|upper }}
+                                    </span>
+                                {% endif %}
+
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+
+                            <div class="action-group">
+
+                                <a href="{{ path('app_espace_show',{id:doc.id}) }}"
+                                   class="btn-action btn-view">
+                                    {{ ux_icon('mdi:eye-outline') }}
+                                </a>
+
+                                {% if doc.statucDoc.value == "Brouillon" %}
+                                    <a href="{{ path('document_edit',{id:doc.id}) }}"
+                                       class="btn-action btn-edit">
+                                        {{ ux_icon('mdi:pencil') }}
+                                    </a>
+                                {% endif %}
+
+                                {% if doc.statucDoc.value == "Archivé" %}
+                                    <a href="{{ path('document_download',{id:doc.id}) }}"
+                                       class="btn-action btn-download">
+                                        {{ ux_icon('mdi:download') }}
+                                    </a>
+                                {% endif %}
+
+                                {% if doc.statucDoc.value == "Brouillon" or doc.statucDoc.value == "Rejeté" %}
+                                    <form method="post"
+                                          action="{{ path('document_delete', {'id': doc.id}) }}"
+                                          onsubmit="return confirm('Voulez-vous vraiment supprimer cet item ?');">
+
+                                        <input type="hidden"
+                                               name="_token"
+                                               value="{{ csrf_token('delete' ~ doc.id) }}">
+
+                                        <button type="submit"
+                                                class="btn-action btn-delete">
+                                            {{ ux_icon('mdi:trash') }}
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- MOBILE CARDS -->
+        <div class="doc-cards">
+
+            {% for doc in pagination %}
+            <div class="doc-card">
+
+                <h5>{{ doc.titre }}</h5>
+
+                <p>
+                    <strong>Référence :</strong>
+                    {{ doc.reference }}
+                </p>
+
+                <p>
+                    <strong>Type :</strong>
+                    {{ doc.typeDocumentID.nomTypeDoc }}
+                </p>
+
+                {% if doc.fichier %}
+                    {% set ext = doc.fichier|split('.')|last %}
+
+                    {% if ext in ['jpg','jpeg','png','webp'] %}
+                        <img
+                            src="{{ asset('uploads/documents/' ~ doc.fichier) }}"
+                            class="img-fluid rounded-4 mt-2"
+                            alt=""
+                        >
+                    {% endif %}
+                {% endif %}
+
+                <div class="action-group">
+
+                    <a href="{{ path('app_espace_show',{id:doc.id}) }}"
+                       class="btn-action btn-view">
+                        <i class="bi bi-eye"></i>
+                        Voir
+                    </a>
+
+                    {% if doc.statucDoc.value == "Brouillon" %}
+                        <a href="{{ path('document_edit',{id:doc.id}) }}"
+                           class="btn-action btn-edit">
+                            <i class="bi bi-pencil"></i>
+                            Modifier
+                        </a>
+                    {% endif %}
+
+                    {% if doc.statucDoc.value == "Archivé" %}
+                        <a href="{{ path('document_download',{id:doc.id}) }}"
+                           class="btn-action btn-download">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    {% endif %}
+
+                    {% if doc.statucDoc.value == "Brouillon" or doc.statucDoc.value == "Rejeté" %}
+                        <form method="post"
+                              action="{{ path('document_delete', {'id': doc.id}) }}"
+                              onsubmit="return confirm('Voulez-vous vraiment supprimer cet item ?');">
+
+                            <input type="hidden"
+                                   name="_token"
+                                   value="{{ csrf_token('delete' ~ doc.id) }}">
+
+                            <button type="submit"
+                                    class="btn-action btn-delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                </div>
+
+            </div>
+            {% endfor %}
+
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="d-flex justify-content-center mt-4">
+            {{ knp_pagination_render(pagination) }}
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+            <i class="bi bi-folder-x"></i>
+            <h4>Aucun document trouvé</h4>
+            <p>Ajoutez votre premier document</p>
+        </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}

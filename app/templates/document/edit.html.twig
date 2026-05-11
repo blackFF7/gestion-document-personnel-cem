@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Document{% endblock %}
+
+{% block body %}
+    <div class="container mt-5 pt-5">
+        <h1 class="text-center text-md-start mt-5 pt-5  mb-3 pb-3">Editer le document</h1>
+
+        {{ include('document/_form.html.twig', { button_label: 'Modifier'}) }}
+    </div>
+
+{% endblock %}

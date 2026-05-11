@@ -1,0 +1,43 @@
+{# templates/personnel/edit.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier — {{ personnel.fullName }}{% endblock %}
+
+{% block body %}
+<div class="container pt-5 mt-5">
+    <nav aria-label="breadcrumb" class="mb-3 mt-4 pt-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_personnel_index') }}">Personnel</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_personnel_show', {id: personnel.id}) }}">{{ personnel.fullName }}</a></li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+
+    <h2 class="mb-4">Modifier : {{ personnel.fullName }}</h2>
+
+    {{ component('PersonnelForm', {
+        editId:           personnel.id,
+        nomAg:            personnel.nomAg,
+        prenomAg:         personnel.prenomAg,
+        IM:               personnel.IM,
+        username:         personnel.username,
+        sexe:             personnel.sexe ? personnel.sexe.value : '',
+        situationFamilial: personnel.situationFamilial ? personnel.situationFamilial.value : 'Célibataire',
+        dateNaissAg:      personnel.dateNaissAg ? personnel.dateNaissAg|date('Y-m-d') : '',
+        dateEntre:        personnel.dateEntre ? personnel.dateEntre|date('Y-m-d') : '',
+        adresseAg:        personnel.adresseAg ?? '',
+        mailAg:           personnel.mailAg ?? '',
+        statusCompte:     personnel.statusCompte ? personnel.statusCompte.value : 'Inactif',
+        fonctionId:       personnel.fonctionID ? personnel.fonctionID.id : '',
+        backFront:        personnel.isBackFront,
+        roles:            personnel.roles,
+        contacts:         contactsArray|default([]),
+        avecConjoint:     personnel.conjoint is not null,
+        conjointNom:      personnel.conjoint ? personnel.conjoint.nom : '',
+        conjointPrenom:   personnel.conjoint ? personnel.conjoint.prenom : '',
+        conjointDateNaiss: personnel.conjoint and personnel.conjoint.dateNaiss ? personnel.conjoint.dateNaiss|date('Y-m-d') : '',
+        conjointProfession: personnel.conjoint ? (personnel.conjoint.profession ?? '') : '',
+        enfants:          enfantsArray,
+    }) }}
+</div>
+{% endblock %}
