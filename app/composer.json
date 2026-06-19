@@ -100,6 +100,7 @@
         "symfony/webhook": "7.4.*",
         "symfony/workflow": "7.4.*",
         "symfony/yaml": "7.4.*",
+        "symfonycasts/reset-password-bundle": "^1.25",
         "twbs/bootstrap": "5.3.8",
         "twig/extra-bundle": "^3.24",
         "twig/twig": "^3.24",

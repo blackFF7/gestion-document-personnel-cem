@@ -22,7 +22,7 @@
           <img src="{{ asset('icons/logo3.png') }}" alt="DigitDoc" style="max-width:100px;">
         </div>
 
-        <h1 class="form-title d-flex justify-content-center">Connexion</h1>
+        <h1 class="form-title d-flex justify-content-center mb-4">Connexion</h1>
 
         {% if error %}
         <div class="alert-dd" role="alert">
@@ -93,6 +93,14 @@
                   data-login-form-target="submitBtn">
             Se connecter
           </button>
+
+        <div class="d-flex justify-content-center mt-5">
+            <a href="{{ path('app_forgot_password_request') }}"
+                class="btn btn-link text-decoration-none text-dark"
+                style="font-size:.85rem;">
+                {{ ux_icon('mdi:lock-question') }} Mot de passe oublié ?
+            </a>
+        </div>
 
         </form>
       </section>

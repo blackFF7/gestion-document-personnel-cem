@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Email envoyé | DigitDoc{% endblock %}
+
+{% block body %}
+<body class="login-page">
+
+  <div class="bg-geo"></div>
+  <div class="bg-dots"></div>
+  <div class="shape shape-1" aria-hidden="true"></div>
+  <div class="shape shape-2" aria-hidden="true"></div>
+  <div class="shape shape-3" aria-hidden="true"></div>
+  <div class="shape shape-4" aria-hidden="true"></div>
+
+  <main class="login-wrapper">
+    <div class="login-card">
+
+      {# ── FORM SIDE ── #}
+      <section class="login-form-side">
+
+        <div class="login-logo-mobile">
+          <img src="{{ asset('icons/logo3.png') }}" alt="DigitDoc" style="max-width:100px;">
+        </div>
+
+        <h1 class="form-title d-flex justify-content-center">Email envoyé</h1>
+
+        {# ── Icône succès ── #}
+        <div class="text-center my-4">
+          {{ ux_icon('mdi:email-check', {style: 'font-size:4rem; color:var(--dd-primary)'}) }}
+        </div>
+
+        <p style="line-height:1.7; color:#555; font-size:.95rem; text-align:center;">
+          Si un compte correspond à votre adresse e-mail, un lien de réinitialisation
+          vient d'être envoyé. Ce lien expirera dans
+          <strong>{{ resetToken.expirationMessageKey|trans(resetToken.expirationMessageData, 'ResetPasswordBundle') }}</strong>.
+        </p>
+
+        {# ── Avertissement spam ── #}
+        <div style="
+          background:#fff8e1;
+          border-left:4px solid #ffc107;
+          border-radius:6px;
+          padding:12px 16px;
+          font-size:.88rem;
+          color:#7a6000;
+          margin:24px 0;
+        ">
+          {{ ux_icon('mdi:alert-outline') }}
+          Vous ne recevez pas d'email ? Vérifiez vos spams ou
+          <a href="{{ path('app_forgot_password_request') }}" style="color:#7a6000; font-weight:600;">
+            réessayez
+          </a>.
+        </div>
+
+        <a href="{{ path('app_login') }}" class="btn-submit text-center text-decoration-none d-block">
+          {{ ux_icon('mdi:arrow-left') }} Retour à la connexion
+        </a>
+
+      </section>
+
+      {# ── BRAND SIDE ── #}
+      <aside class="login-brand-side" aria-hidden="true">
+        <div class="brand-accent"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-logo-wrap">
+          <img src="{{ asset('icons/logo3.png') }}" alt="DigitDoc">
+        </div>
+        <h2 class="brand-title">
+          <span class="text-light">Digit</span><span class="text-warning">Doc</span>
+        </h2>
+        <div class="brand-divider"></div>
+        <p class="brand-tagline">Le partenaire de votre document</p>
+      </aside>
+
+    </div>
+  </main>
+
+</body>
+{% endblock %}

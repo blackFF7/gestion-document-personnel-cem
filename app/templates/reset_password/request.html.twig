@@ -1,0 +1,98 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mot de passe oublié | DigitDoc{% endblock %}
+
+{% block body %}
+<body class="login-page">
+
+  <div class="bg-geo"></div>
+  <div class="bg-dots"></div>
+  <div class="shape shape-1" aria-hidden="true"></div>
+  <div class="shape shape-2" aria-hidden="true"></div>
+  <div class="shape shape-3" aria-hidden="true"></div>
+  <div class="shape shape-4" aria-hidden="true"></div>
+
+  <main class="login-wrapper">
+    <div class="login-card">
+
+      {# ── FORM SIDE ── #}
+      <section class="login-form-side">
+
+        <div class="login-logo-mobile">
+          <img src="{{ asset('icons/logo3.png') }}" alt="DigitDoc" style="max-width:100px;">
+        </div>
+
+        <h1 class="form-title d-flex justify-content-center">Mot de passe oublié</h1>
+        <p class="text-center text-muted mb-4" style="font-size:.9rem;">
+          Saisissez votre adresse e-mail et nous vous enverrons un lien de réinitialisation.
+        </p>
+
+        {# ── Flash erreurs ── #}
+        {% for flash_error in app.flashes('reset_password_error') %}
+          <div class="alert-dd mb-3" role="alert">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>{{ flash_error }}</span>
+          </div>
+        {% endfor %}
+
+        {{ form_start(requestForm, {'attr': {'novalidate': 'novalidate', 'autocomplete': 'off'}}) }}
+
+          {# ── Champ email ── #}
+          <div class="ff-group">
+            <div class="form-floating" data-controller="floating-field">
+              {{ form_widget(requestForm.mailAg, {
+                'attr': {
+                  'class': 'form-control',
+                  'placeholder': 'Adresse e-mail',
+                  'data-floating-field-target': 'input'
+                }
+              }) }}
+              <label for="{{ requestForm.mailAg.vars.id }}">Adresse e-mail</label>
+            </div>
+            {% if form_errors(requestForm.mailAg) %}
+              <div class="alert-dd mt-1" role="alert">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>{{ form_errors(requestForm.mailAg) }}</span>
+              </div>
+            {% endif %}
+          </div>
+
+          <button class="btn-submit" type="submit">
+            {{ ux_icon('mdi:email-fast') }} Envoyer le lien
+          </button>
+
+          <div class="text-center mt-3">
+            <a href="{{ path('app_login') }}" style="font-size:.85rem; color:var(--dd-primary);">
+              {{ ux_icon('mdi:arrow-left') }} Retour à la connexion
+            </a>
+          </div>
+
+        {{ form_end(requestForm) }}
+
+      </section>
+
+      {# ── BRAND SIDE ── #}
+      <aside class="login-brand-side" aria-hidden="true">
+        <div class="brand-accent"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-ring"></div>
+        <div class="brand-logo-wrap">
+          <img src="{{ asset('icons/logo3.png') }}" alt="DigitDoc">
+        </div>
+        <h2 class="brand-title">
+          <span class="text-light">Digit</span><span class="text-warning">Doc</span>
+        </h2>
+        <div class="brand-divider"></div>
+        <p class="brand-tagline">Le partenaire de votre document</p>
+      </aside>
+
+    </div>
+  </main>
+
+</body>
+{% endblock %}

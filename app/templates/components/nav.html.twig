@@ -1,4 +1,4 @@
-{% if app.request.attributes.get('_route') != 'app_login' %}
+{% if app.request.attributes.get('_route') != 'app_login' and app.user %}
 
 <header class="main-header fixed-top">
 

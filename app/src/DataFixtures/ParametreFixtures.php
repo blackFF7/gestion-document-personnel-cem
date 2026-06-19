@@ -581,14 +581,25 @@ class ParametreFixtures extends Fixture
 
                 // ── Construction de la référence ─────────────────────────
                 $titulaire = $personOwner->getNomAg() . ' ' . $personOwner->getPrenomAg();
-                $reference = sprintf(
-                    '%s_%d_%s_%s_du_%s',
+                $referenceBase = sprintf(
+                    '%s_%d_%s_%s_du %s',
                     $im,
                     $dossier->getId(),
                     $nomenclatureDos,
                     $type->getNomTypeDoc(),
                     $dateArr->format('d.m.Y')
                 );
+
+
+                // ── Versioning si collision ───────────────────────────────
+                $reference = $referenceBase;
+                $version   = 1;
+                $docRepo   = $manager->getRepository(Document::class);
+
+                while ($docRepo->findOneBy(['reference' => $reference])) {
+                    $version++;
+                    $reference = $referenceBase . '_v' . $version;
+                }
 
                 // ── Path MinIO ────────────────────────────────────────────
                 $docPath = $this->buildDocumentPath(
